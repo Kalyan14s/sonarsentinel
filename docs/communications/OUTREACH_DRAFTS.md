@@ -100,6 +100,8 @@
 
 ## 5. AI4Shipwrecks — licence clarification (only if the Deep Blue record shows no licence)
 
+> **Not needed:** the Deep Blue record states **CC BY 4.0** (checked 2026-09-13). Kept only as a template for asking about sharing trained weights, if ever required.
+
 **To:** University of Michigan Field Robotics Group (contact via the AI4Shipwrecks project site)
 **Subject:** Licence terms for the AI4Shipwrecks dataset
 
@@ -132,9 +134,9 @@
 
 | # | Recipient | Purpose | Sent (date) | Follow-up due | Reply / outcome | Owner |
 |---|---|---|---|---|---|---|
-| 1 | College SPOC | Deadline + nomination | | | | R6 |
-| 2 | NIOT | Data + domain questions | | | | R6 |
-| 3 | GhostNetZero / WWF | Ghost-net samples | | | | R6 |
-| 4 | S3Simulator authors | Dataset permission (optional) | | | | R1 |
-| 5 | AI4Shipwrecks team | Licence (if needed) | | | | R1 |
+| 1 | College SPOC | Deadline + nomination | Done (confirmed by team lead 2026-09-13) | — | Deadline confirmed; internal hackathon done, team nominated | R6 |
+| 2 | NIOT | Data + domain questions | Sent (confirmed by team lead 2026-09-13) | 5 working days after sending | Awaiting reply | R6 |
+| 3 | GhostNetZero / WWF | Ghost-net samples | Sent (confirmed by team lead 2026-09-13) | 10 working days after sending | Awaiting reply | R6 |
+| 4 | S3Simulator authors | Dataset permission (optional) | Not sent | — | Dataset stays excluded | R1 |
+| 5 | AI4Shipwrecks team | Licence (if needed) | Not needed | — | Licence confirmed CC BY 4.0 from Deep Blue record | R1 |
 | 6 | Mentor | Baseline review + IP question | | | | R6 |

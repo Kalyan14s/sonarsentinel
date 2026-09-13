@@ -18,7 +18,13 @@ venv/
 
 # ---- Data, models and outputs (DVC / shared storage, never git) ----
 # Anchored to the repository root so docs/data/ stays tracked.
-/data/
+# Data files are ignored; DVC pointer files and provenance records under data/ are tracked.
+/data/**
+!/data/**/
+!/data/**/*.dvc
+!/data/**/.gitignore
+!/data/**/*.PROVENANCE.yaml
+!/data/raw/DOWNLOAD_SUMMARY.json
 /models/
 /runs/
 /results/

@@ -30,3 +30,4 @@ dependencies:
       - pyxtf
       - opencv-python-headless
       - types-PyYAML
+      - dvc

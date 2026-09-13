@@ -8,7 +8,7 @@ Operational register of every dataset used for training, evaluation or demos. Re
 
 | ID | Dataset | Licence / terms | Status | Checked (date, by) | Evidence | Allowed use | Required attribution |
 |---|---|---|---|---|---|---|---|
-| D1 | AI4Shipwrecks (Deep Blue Data, DOI 10.7302/dmf4-x492) | Not confirmed | ❓ | 2026-09-13, automated check blocked | DataCite `rightsList` empty; no licence on project site | Research prototype only; **no redistribution** until confirmed | Sethuraman et al., IJRR 44(3), 2025, doi:10.1177/02783649241266853 |
+| D1 | AI4Shipwrecks (Deep Blue Data, DOI 10.7302/dmf4-x492) | CC BY 4.0 | ✅ | 2026-09-13, Deep Blue record JSON (`rights_license`) | https://deepblue.lib.umich.edu/data/concern/data_sets/8623hz41x.json → `http://creativecommons.org/licenses/by/4.0/` | Train, evaluate, demo, redistribute with attribution | Sethuraman et al., IJRR 44(3), 2025, doi:10.1177/02783649241266853; dataset DOI 10.7302/dmf4-x492 |
 | D2 | Side-scan sonar imaging for mine detection (Figshare 24574879 v2) | CC BY 4.0 | ✅ | 2026-09-13, Figshare API | https://api.figshare.com/v2/articles/24574879 | Train, evaluate, demo, redistribute with attribution | Pessanha Santos et al., Data in Brief 53, 2024, doi:10.1016/j.dib.2024.110132 |
 | D3 | SeabedObjects-KLSG (huoguanying) | README: academic use; no LICENSE file | ⚠ | 2026-09-13, repository README | github.com/huoguanying/SeabedObjects-Ship-and-Airplane-dataset | Academic research only; no redistribution; not in commercial models; **victim images excluded** | Huo, Wu & Li, IEEE Access 8, 2020, doi:10.1109/ACCESS.2020.2978880 |
 | D3b | SeabedObjects-KLSG-II (HHUCzCz) | None | ❌ | 2026-09-13 | Repository contains no licence or terms | Excluded | — |
@@ -32,5 +32,5 @@ Add one row per downloaded survey or release (details in its `PROVENANCE.yaml`).
 | Dataset | Requested from | Date requested | Response | Terms granted | Evidence location |
 |---|---|---|---|---|---|
 | D4 S3Simulator | Authors ([draft](../../docs/communications/OUTREACH_DRAFTS.md#4-s3simulator-authors--dataset-permission-optional)) | | | | |
-| D1 AI4Shipwrecks | Deep Blue record (manual browser check) / authors if needed | | | | |
+| D1 AI4Shipwrecks | Deep Blue record check | 2026-09-13 | Record states CC BY 4.0 | CC BY 4.0 (no permission needed) | Deep Blue record JSON `rights_license` |
 | D10 ghost-net samples | GhostNetZero / WWF ([draft](../../docs/communications/OUTREACH_DRAFTS.md#3-wwf-germany--ghostnetzero--ghost-net-sample-access-prd-q6)) | | | | |

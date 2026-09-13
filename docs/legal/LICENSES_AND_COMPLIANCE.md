@@ -5,7 +5,7 @@
 | **Version** | v1.1 · 2026-09-13 |
 | **Owner** | PM (R6) with ML Lead (R1); review with mentor / institution before any public or commercial release |
 | **Status** | Living document |
-| **Licence check** | 2026-09-13: items previously marked *verify* checked against primary sources (LICENSE files, PyPI/npm metadata, dataset records). One item is still open (AI4Shipwrecks, see §3). |
+| **Licence check** | 2026-09-13: items previously marked *verify* checked against primary sources (LICENSE files, PyPI/npm metadata, dataset records). AI4Shipwrecks confirmed as CC BY 4.0 from its Deep Blue record, so no dataset licence item remains open. |
 
 > **Not legal advice.** Licences change between versions. Before each release, **check the licence in the exact version you ship** (package metadata / repository `LICENSE` file) and update this document.
 >
@@ -99,7 +99,7 @@
 
 | ID | Source | Terms | Status | Allowed use in this project | Attribution |
 |---|---|---|---|---|---|
-| D1 | AI4Shipwrecks (Univ. of Michigan, Deep Blue Data, DOI 10.7302/dmf4-x492) | **Not confirmed.** The record page blocks automated access; DataCite `rightsList` is empty; project site and scripts repo state no licence | ❓ | Until confirmed: research prototype training/evaluation with citation; **no redistribution** of the data. Someone must open https://deepblue.lib.umich.edu/data/concern/data_sets/8623hz41x in a browser and record the licence field (TODO Phase 1) | Sethuraman et al., IJRR 2025 |
+| D1 | AI4Shipwrecks (Univ. of Michigan, Deep Blue Data, DOI 10.7302/dmf4-x492) | **CC BY 4.0**: `rights_license` in the Deep Blue record JSON (checked 2026-09-13) | ✅ | Training, evaluation, demo, redistribution with attribution | Sethuraman et al., IJRR 2025; dataset DOI 10.7302/dmf4-x492 |
 | D2 | Side-scan sonar imaging for mine detection (Figshare, v2, 2024-01-17) | **CC BY 4.0** | ✅ | Training, evaluation, demo, redistribution with attribution; commercial use allowed | Pessanha Santos et al., Data in Brief 2024; Figshare DOI 10.6084/m9.figshare.24574879 |
 | D3 | SeabedObjects-KLSG (`huoguanying/SeabedObjects-Ship-and-Airplane-dataset`) | README: "can be used for academic purpose"; no LICENSE file | ⚠ | Academic research only; **not** in commercial models; no redistribution; victim images excluded | Huo, Wu & Li, IEEE Access 2020 |
 | D3b | SeabedObjects-KLSG-II (`HHUCzCz/-SeabedObjects-KLSG--II`) | No licence, no terms (repo holds one sample image) | ❌ | **Excluded** (all rights reserved) | — |
@@ -130,7 +130,7 @@
 
 - [x] Project licence decided and `LICENSE` file present (AGPL-3.0, 2026-09-13)
 - [ ] `THIRD_PARTY_NOTICES.txt` generated for Python and npm dependencies (exact versions)
-- [ ] ◻ entries re-checked for the exact shipped versions; AI4Shipwrecks licence (❓) confirmed
+- [ ] ◻ entries re-checked for the exact shipped versions *(AI4Shipwrecks licence confirmed: CC BY 4.0)*
 - [ ] `react-leaflet` absent from `package.json` / lock file; SAM 3 not used anywhere
 - [ ] Excluded datasets (D3b, D4) absent from all manifests unless permission is recorded
 - [ ] Model cards list training sources and resulting use restrictions

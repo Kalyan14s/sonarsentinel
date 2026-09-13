@@ -42,7 +42,7 @@ The pipeline **trains on the first kind and runs on the second**, computing GPS 
 - **Content:** 286 high-resolution SSS images of 28 shipwrecks with pixel-wise segmentation labels. Collected in 2022–2023 at NOAA Thunder Bay National Marine Sanctuary (Lake Huron) with an Iver3 AUV and EdgeTech 2205 dual-frequency sonar. Labels are based on marine-archaeology expert references.
 - **Format:** PNG images + label masks.
 - **Citation:** A. V. Sethuraman et al., "Machine learning for shipwreck segmentation from side scan sonar imagery: Dataset and benchmark," *International Journal of Robotics Research*, vol. 44, no. 3, pp. 341–354, 2025, doi: 10.1177/02783649241266853. arXiv:2401.14546.
-- **Licence:** ❓ **not yet confirmed.** The Deep Blue record (DOI 10.7302/dmf4-x492) blocks automated access, and no licence is stated on the project site or in DataCite. Open the record in a browser and record the licence field (TODO Phase 1). Until then: research use with citation, no redistribution.
+- **Licence:** ✅ **CC BY 4.0**, from the Deep Blue record's `rights_license` field (DOI 10.7302/dmf4-x492), checked 2026-09-13. Attribution required; redistribution allowed.
 - **Our handling:** masks → YOLO-seg polygons (`ml/datasets/convert_ai4shipwrecks.py`); site ID = wreck name (for grouped splits); resample to 0.10 m/px where resolution metadata is available.
 - **Caveats:** freshwater (Great Lakes) seabed; large wrecks only, so it doesn't cover small debris.
 

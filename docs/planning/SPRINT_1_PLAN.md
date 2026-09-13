@@ -24,7 +24,7 @@
 | ST-026 | Memory-mapped chunked reading | 3 | R4 | ST-021 | 2 GB file with peak RAM ≤ 8 GB | TC-PERF-004 (partial) |
 | ST-030 | Units/CRS detection, UTM ↔ WGS84 | 2 | R3 | — | Degree and UTM copies agree < 0.1 m | TC-ING-007, TC-ING-008 |
 | ST-031 | `pixel_to_latlon` + golden tests | 3 | R3 | ST-030 | Golden error < 0.05 m | TC-GEO-001, TC-GEO-002, TC-GEO-003 |
-| ST-010 | AI4Shipwrecks → YOLO-seg | 3 | R1 | Licence check (D1) | 20 random overlays correct | — |
+| ST-010 | AI4Shipwrecks → YOLO-seg | 3 | R1 | Dataset download (licence confirmed CC BY 4.0) | 20 random overlays correct | — |
 | ST-011 | Mine SSS dataset: MILCO → cylinder; NOMBO review | 3 | R1 | — | Mapping table; visual check | — |
 | ST-012 | KLSG normal seafloor pool (victim images excluded) | 2 | R1 | — | ≥ 500 normal tiles | — |
 | ST-013 | ≥ 3 NOAA/USGS XTF surveys incl. a charted wreck | 3 | R3 | — | Provenance + ground-truth files | — |
@@ -61,7 +61,7 @@
 |---|---|---|
 | R3 XTF variants break the parser | Any sample file fails to parse by Wednesday | Try the other pyxtf implementation; adapter per variant; carry ST-026 over if needed |
 | Data downloads late (ST-013) | No XTF with navigation by Tuesday | Use the synthetic TD-01 survey for ST-021/031 tests; keep ST-013 open |
-| AI4Shipwrecks licence unconfirmed | Not checked by Monday | ST-010 continues for research use only; no redistribution (licence register) |
+| ~~AI4Shipwrecks licence unconfirmed~~ | Resolved 2026-09-13: CC BY 4.0 (Deep Blue record) | No action needed; cite dataset and paper |
 | SIH idea deadline competes for time | Deck not final by Thursday | PM timeboxes deck work; engineering stories unaffected |
 
 ## 5. Carry-over rules

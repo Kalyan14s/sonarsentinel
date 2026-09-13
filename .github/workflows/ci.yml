@@ -68,3 +68,28 @@ jobs:
         if: steps.check.outputs.present == 'true'
         working-directory: frontend
         run: npm ci && npm run lint && npm run typecheck && npm run build
+
+  conda-env:
+    name: Conda environment (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          environment-file: backend/environment.yml
+          activate-environment: sonarsentinel
+      - name: Import geospatial and sonar libraries
+        run: python -c "import rasterio, pyproj, cv2, pyxtf; from osgeo import gdal; print('GDAL', gdal.__version__, '| OpenCV', cv2.__version__)"
+      - name: Install package and run tests
+        working-directory: backend
+        run: |
+          pip install -e ".[dev]"
+          pytest -q
