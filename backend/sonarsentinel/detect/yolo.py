@@ -65,7 +65,7 @@ class YoloDetector:
         path = Path(weights)
         if path.suffix != ".yaml" and not path.is_file():
             raise ModelsNotLoadedError(f"Detector weights not found: {path}", path=str(path))
-        from ultralytics import YOLO  # type: ignore[attr-defined]
+        from ultralytics import YOLO  # type: ignore[attr-defined, unused-ignore]  # absent in CI
 
         self.weights = path
         self.model: Any = YOLO(str(path))
