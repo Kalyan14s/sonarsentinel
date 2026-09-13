@@ -51,6 +51,13 @@ class JobNotCancellableError(SonarSentinelError):
     http_status = 409
 
 
+class JobTimeoutError(SonarSentinelError):
+    """A job ran longer than ``jobs.max_job_seconds`` (``SS_JOB_TIMEOUT_S``) and was stopped."""
+
+    code = "JOB_TIMEOUT"
+    http_status = 500
+
+
 class FileTooLargeError(SonarSentinelError):
     """Upload exceeds the configured size limit."""
 

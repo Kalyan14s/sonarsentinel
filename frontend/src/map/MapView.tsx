@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import type { Detection } from '../api/client';
+import { useBasemap } from '../settings/basemap';
 import {
   createMapController,
   type LatLon,
@@ -25,7 +26,8 @@ interface MapViewProps {
 
 /**
  * Thin React wrapper around Leaflet, used directly as decided in ADR-009 (no react-leaflet).
- * Offline MBTiles support replaces `tileUrl` in ST-099.
+ * Without a `tileUrl` prop the basemap follows Settings: offline MBTiles tiles when available
+ * (ST-099), otherwise OpenStreetMap online. The map is created once that choice is known.
  */
 export function MapView({
   track,
@@ -40,27 +42,36 @@ export function MapView({
   const element = useRef<HTMLDivElement>(null);
   const controller = useRef<MapController | null>(null);
   const callbacks = useRef({ onSelect, onReady });
+  const basemap = useBasemap();
+  const effectiveTiles = tileUrl ?? (basemap.loaded ? basemap.tileUrl : null);
 
   useEffect(() => {
     callbacks.current = { onSelect, onReady };
   }, [onSelect, onReady]);
 
   useEffect(() => {
-    if (!element.current) return;
+    if (!element.current || effectiveTiles === null) return;
     const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     const created = createMapController(element.current, {
-      tileUrl,
+      tileUrl: effectiveTiles,
       reducedMotion,
       onSelect: (id) => callbacks.current.onSelect?.(id),
     });
     controller.current = created;
     callbacks.current.onReady?.(created);
+    created.setTrack(track);
+    created.setQualitySegments(quality);
+    created.setMosaic(mosaic);
+    created.setDetections(detections);
+    created.select(selected);
     return () => {
       callbacks.current.onReady?.(null);
       created.destroy();
       controller.current = null;
     };
-  }, [tileUrl]);
+    // Layers are pushed by the effects below; this effect only rebuilds the map for a new basemap.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveTiles]);
 
   useEffect(() => controller.current?.setTrack(track), [track]);
   useEffect(() => controller.current?.setQualitySegments(quality), [quality]);

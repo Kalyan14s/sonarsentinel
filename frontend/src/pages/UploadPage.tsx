@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { ApiError, api, createSurvey, validateSurvey, type UploadProgress } from '../api/client';
 import {
@@ -63,7 +63,13 @@ export function UploadPage() {
   const [navCsv, setNavCsv] = useState<File | null>(null);
   const [navErrors, setNavErrors] = useState<string[]>([]);
   const [allowNoGps, setAllowNoGps] = useState(false);
-  const [options, setOptions] = useState<AdvancedOptions>(() => loadOptions());
+  const [searchParams] = useSearchParams();
+  // Re-run / Fix from History (S-07) prefill the survey name; uploads themselves cannot be re-sent.
+  const [options, setOptions] = useState<AdvancedOptions>(() => {
+    const loaded = loadOptions();
+    const name = searchParams.get('name');
+    return name ? { ...loaded, name } : loaded;
+  });
   const [advancedOpen, setAdvancedOpen] = useState(() => loadAdvancedOpen());
   const [models, setModels] = useState<string[]>([]);
   const [upload, setUpload] = useState<UploadProgress | null>(null);
@@ -313,7 +319,7 @@ export function UploadPage() {
               <span className={styles.ok}>ok</span> .png / .jpg + nav .csv
             </li>
             <li>
-              <span className={styles.muted}>planned</span> .jsf .sl2 .sl3
+              <span className={styles.muted}>not supported</span> .jsf .sl2 .sl3
             </li>
           </ul>
           <button type="button" className={styles.button} onClick={downloadTemplate}>

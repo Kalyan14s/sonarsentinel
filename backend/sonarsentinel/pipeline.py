@@ -29,6 +29,7 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
+from pyproj import Transformer
 
 from sonarsentinel.config import config_hash, load_config
 from sonarsentinel.detect.anomaly import heat_regions
@@ -41,19 +42,28 @@ from sonarsentinel.detect.merge import (
     tiles_to_image,
     to_survey,
 )
+from sonarsentinel.detect.yolo import runtime_fallback_warnings
+from sonarsentinel.errors import SonarSentinelError
 from sonarsentinel.geo.cluster import cluster_detections, persistence_score
 from sonarsentinel.geo.georef import raster_pixels_to_latlon
 from sonarsentinel.geo.layback import LAYBACK_ESTIMATED, resolve_layback
 from sonarsentinel.geo.measure import ImageGeometry, measure_mask, order_clockwise
 from sonarsentinel.geo.mosaic import MosaicBuilder
+from sonarsentinel.geo.navigation import elapsed_seconds, find_invalid_fixes
 from sonarsentinel.geo.track import track_bbox, track_length_km, valid_fixes
 from sonarsentinel.geo.uncertainty import position_uncertainty_m, speed_mps_from_nav
-from sonarsentinel.ingest.chunking import chunk_ranges
-from sonarsentinel.ingest.models import NOT_GEOTAGGED, SHIP_POSITION_ONLY, SonarLog
+from sonarsentinel.geo.units import utm_epsg_for
+from sonarsentinel.ingest.chunking import chunk_ranges, iter_chunks
+from sonarsentinel.ingest.models import (
+    GPS_INTERPOLATED,
+    NOT_GEOTAGGED,
+    SHIP_POSITION_ONLY,
+    SonarLog,
+)
 from sonarsentinel.ingest.reader import read_source
 from sonarsentinel.preprocess.bottom import NO_ALTITUDE_BOTTOM_TRACKED
 from sonarsentinel.preprocess.channels import to_three_channel
-from sonarsentinel.preprocess.pipeline import preprocess_log
+from sonarsentinel.preprocess.pipeline import ProcessedChunk, preprocess_chunk
 from sonarsentinel.preprocess.surface import (
     SURFACE_RETURN_BAND,
     in_surface_band,
@@ -77,6 +87,7 @@ from sonarsentinel.scoring.shadow import ShadowResult, shadow_score
 EventCallback = Callable[[dict[str, Any]], None]
 CALIBRATOR_VERSION = IDENTITY_CALIBRATOR
 BATCH_TILES = 8
+CHUNK_SKIPPED = "CHUNK_SKIPPED"
 logger = logging.getLogger(__name__)
 
 
@@ -201,6 +212,8 @@ def run_pipeline(
         allow_no_gps=allow_no_gps,
         work_dir=work_dir,
     )
+    if log.source_format != "geotiff":
+        _fill_navigation_gaps(log, cfg)
     layback_estimated, layback_m = _apply_layback(log, cfg, apply_layback, manual_layback_m)
     emit("progress", stage="parse", percent=5.0, pings_done=0, pings_total=log.n_pings)
     sid = survey_id or _survey_id(log)
@@ -246,6 +259,16 @@ def run_pipeline(
         # The rule-based stand-in floods real seabed texture with detections (USGS Grand Bay test:
         # 3,785 on one line); make that visible in every report it produces.
         quality["warnings"] = sorted({*quality["warnings"], "RULE_BASED_DETECTOR"})
+
+    requested_runtime = str(cfg.get("detection", {}).get("runtime", "auto"))
+    runtime_warnings = [
+        *getattr(model, "runtime_warnings", []),
+        *runtime_fallback_warnings(
+            requested_runtime, str(getattr(model, "runtime", "cpu")), describe(model)
+        ),
+    ]
+    if runtime_warnings:  # CPU_FALLBACK (TC-ROB-005)
+        quality["warnings"] = sorted({*quality["warnings"], *runtime_warnings})
 
     emit("progress", stage="report", percent=95.0)
     report = build_report(
@@ -493,6 +516,49 @@ def _anomaly_stats(
     )
 
 
+def _dilate_rows(flags: npt.NDArray[np.bool_], radius: int) -> npt.NDArray[np.bool_]:
+    """Row flags widened by ``radius`` rows on each side."""
+    if radius <= 0 or not flags.any():
+        return flags
+    kernel = np.ones(2 * radius + 1)
+    return np.asarray(np.convolve(flags.astype(np.float64), kernel, mode="same") > 0)
+
+
+def _fill_navigation_gaps(log: SonarLog, cfg: dict[str, Any]) -> None:
+    """Interpolate missing or implausible fixes over the whole line, before chunking.
+
+    Per-chunk navigation cleaning can only hold the last fix across a gap that reaches a chunk
+    border, which collapses the along-track resampling of those pings (TC-ROB-002). Filled pings
+    keep ``nav_source = "interpolated"`` so detections on them are flagged ``GPS_INTERPOLATED``.
+    """
+    if not log.has_navigation or log.n_pings < 2:
+        return
+    nav = log.nav
+    lat = nav["lat"].to_numpy(np.float64)
+    lon = nav["lon"].to_numpy(np.float64)
+    invalid = find_invalid_fixes(
+        lat, lon, elapsed_seconds(nav), max_speed_mps=float(cfg["navigation"]["max_speed_mps"])
+    )
+    valid = np.flatnonzero(~invalid)
+    if not invalid.any() or len(valid) < 2:
+        return
+    epsg = utm_epsg_for(float(np.median(lon[valid])), float(np.median(lat[valid])))
+    to_utm: Any = Transformer.from_crs("EPSG:4326", f"EPSG:{epsg}", always_xy=True)
+    to_geo: Any = Transformer.from_crs(f"EPSG:{epsg}", "EPSG:4326", always_xy=True)
+    east, north = to_utm.transform(lon[valid], lat[valid])
+    pings = np.arange(log.n_pings, dtype=np.float64)
+    lon_f, lat_f = to_geo.transform(np.interp(pings, valid, east), np.interp(pings, valid, north))
+    out = nav.copy()
+    out["lat"] = np.asarray(lat_f, dtype=np.float64)
+    out["lon"] = np.asarray(lon_f, dtype=np.float64)
+    source = out["nav_source"].to_numpy(dtype=object)
+    source[invalid] = "interpolated"
+    out["nav_source"] = source
+    log.nav = out
+    if GPS_INTERPOLATED not in log.warnings:
+        log.warnings.append(GPS_INTERPOLATED)
+
+
 def _detect_waterfall(
     log: SonarLog,
     cfg: dict[str, Any],
@@ -504,8 +570,8 @@ def _detect_waterfall(
     layback_m: float | None = None,
     mosaic_dir: Path | None = None,
 ) -> tuple[list[SurveyDetection], dict[str, Any]]:
-    tiling = cfg["tiling"]
-    min_raw = float(cfg["detection"]["min_raw_score"])
+    """Chunk by chunk: preprocess → detect → measure. A chunk that raises is retried once and
+    then skipped with a ``CHUNK_SKIPPED`` warning over its ping range (02 §5, ADR-019)."""
     chip_px = int(cfg.get("report", {}).get("chip_size_px", 256))
     pixel_threshold = float(getattr(anomaly_model, "pixel_threshold", 0.0) or 0.0)
     speed_mps = speed_mps_from_nav(log.nav) if log.has_navigation else float("nan")
@@ -522,218 +588,97 @@ def _detect_waterfall(
     motion = np.zeros(log.n_pings, dtype=bool)
     bottom_tracked = False
     found: list[SurveyDetection] = []
-    n_chunks = max(
-        len(
-            chunk_ranges(
-                log.n_pings, cfg["chunking"]["pings_per_chunk"], cfg["chunking"]["overlap_pings"]
-            )
-        ),
-        1,
-    )
+    size, overlap = cfg["chunking"]["pings_per_chunk"], cfg["chunking"]["overlap_pings"]
+    n_chunks = max(len(chunk_ranges(log.n_pings, size, overlap)), 1)
 
-    for chunk in preprocess_log(log, cfg):
-        warnings |= set(chunk.warnings)
-        bottom_tracked |= NO_ALTITUDE_BOTTOM_TRACKED in chunk.warnings
-        for event in chunk.quality_events:
-            target = dropout if event["code"] == "DROPOUT" else motion
-            target[event["ping_start"] : event["ping_end"] + 1] = True
+    for chunk_index, (offset, sub_log) in enumerate(iter_chunks(log, size, overlap)):
+        chunk_range = (offset, offset + sub_log.n_pings - 1)
+        result: tuple[ProcessedChunk, list[SurveyDetection]] | None = None
+        for attempt in (1, 2):
+            written: list[str] = []
+            try:
+                chunk = preprocess_chunk(sub_log, cfg, chunk_id=chunk_index, ping_offset=offset)
+                detections = _chunk_detections(
+                    chunk,
+                    log,
+                    cfg,
+                    model,
+                    anomaly_model,
+                    chips_dir=chips_dir,
+                    chip_px=chip_px,
+                    pixel_threshold=pixel_threshold,
+                    speed_mps=speed_mps,
+                    surface_tolerance=surface_tolerance,
+                    suppress_surface=suppress_surface,
+                    layback_estimated=layback_estimated,
+                    layback_m=layback_m,
+                    first_index=len(found),
+                    written=written,
+                )
+                result = (chunk, detections)
+                break
+            except (PipelineCancelled, SonarSentinelError):
+                raise
+            except Exception:  # retry once, then skip the chunk (ADR-019)
+                if chips_dir is not None:
+                    for key in written:
+                        remove_chips(chips_dir, key)
+                logger.exception(
+                    "Chunk %s (pings %s-%s) failed on attempt %s",
+                    chunk_index,
+                    chunk_range[0],
+                    chunk_range[1],
+                    attempt,
+                )
+
+        if result is None:
+            warnings.add(CHUNK_SKIPPED)
             emit(
                 "warning",
-                code=event["code"],
-                message=f"{event['code']} pings",
-                ping_start=event["ping_start"],
-                ping_end=event["ping_end"],
-            )
-
-        height, width = chunk.image.shape
-        skip = row_col_mask((height, width), rows=chunk.masks["dropout"])
-        tiles, pixels = [], []
-        for tile, px in iter_tiles(
-            chunk.image_3ch,
-            mask=skip,
-            size=tiling["size_px"],
-            overlap=tiling["overlap"],
-            skip_if_masked_fraction_gt=tiling["skip_if_masked_fraction_gt"],
-        ):
-            tiles.append(tile)
-            pixels.append(px)
-        per_tile: list[list[RawDetection]] = []
-        for start in range(0, len(pixels), BATCH_TILES):
-            per_tile += model.predict(pixels[start : start + BATCH_TILES])
-        merged = merge_detections(tiles_to_image(per_tile, tiles, (height, width)))
-
-        heat = None
-        if anomaly_model is not None and pixels:
-            heat = _anomaly_heat(anomaly_model, pixels, tiles, (height, width))
-            min_px = max(1, round(float(cfg["anomaly"]["min_region_m2"]) / chunk.ground_res_m**2))
-            merged += heat_regions(
-                heat,
-                pixel_threshold,
-                min_area_px=min_px,
-                exclude_boxes=[d.box for d in merged],
-            )
-
-        geometry = chunk.image_geometry()
-        n_local = len(chunk.nav)
-        chunk_range = (chunk.ping_offset, chunk.ping_offset + n_local - 1)
-        nav_source = chunk.nav["nav_source"].to_numpy(dtype=object)
-        headings = chunk.nav["heading_deg"].to_numpy(np.float64)
-        texture = chunk.image_3ch[..., 2]
-        local_rows = chunk.row_to_ping - chunk.ping_offset
-        band = surface_band_mask(
-            chunk.nav["sensor_depth_m"].to_numpy(np.float64)[local_rows],
-            chunk.altitude_m[local_rows],
-            chunk.nadir_col,
-            width,
-            chunk.ground_res_m,
-            tolerance_m=surface_tolerance,
-        )
-        # The despeckle/texture/median filters mirror the image at its borders, so the first and
-        # last rows of the *line* are noisier than the rest; chunk borders inside the line are
-        # covered by the overlap and are not affected.
-        edge = int(cfg["preprocess"]["local_std_window"])
-        line_start = chunk_range[0] == 0
-        line_end = chunk_range[1] >= log.n_pings - 1
-        for det in merged:
-            if det.score < min_raw:
-                continue
-            x1, y1, x2, y2 = det.box
-            if (line_start and y1 < edge) or (line_end and y2 > height - edge):
-                continue
-            mask = det.full_mask()
-            m = measure_mask(mask, geometry, row0=y1, col0=x1)
-            local = chunk.row_to_ping[y1:y2] - chunk.ping_offset
-            flags = []
-            if chunk.masks["dropout"][y1:y2].any():
-                flags.append("DROPOUT")
-            if chunk.masks["motion"][y1:y2].any():
-                flags.append("HIGH_MOTION")
-            altitude = chunk.altitude_m[local]
-            finite_altitude = altitude[np.isfinite(altitude)]
-            altitude_m = float(np.median(finite_altitude)) if finite_altitude.size else None
-            if altitude_m is not None and m.ground_range_m < 0.3 * altitude_m:
-                flags.append("NEAR_NADIR")
-            if (nav_source[local] == "interpolated").any():
-                flags.append("GPS_INTERPOLATED")
-            if NO_ALTITUDE_BOTTOM_TRACKED in chunk.warnings:
-                flags.append(NO_ALTITUDE_BOTTOM_TRACKED)
-            if not chunk.geotagged:
-                flags.append(NOT_GEOTAGGED)
-            if x1 <= 0 or x2 >= width:
-                flags.append("TILE_EDGE")  # cut by the swath edge (ADR-017 §5)
-            if layback_estimated:
-                flags.append(LAYBACK_ESTIMATED)
-
-            dropout_fraction = float(chunk.masks["dropout"][y1:y2].mean())
-            shadow = shadow_score(
-                chunk.image,
-                mask,
-                det.box,
-                nadir_col=chunk.nadir_col,
-                ground_res_m=chunk.ground_res_m,
-                altitude_m=altitude_m,
-            )
-            anomaly_mean, anomaly_max = _anomaly_stats(heat, det, pixel_threshold)
-            features = detection_features(
-                chunk.image,
-                mask,
-                det.box,
-                cls=det.cls,
-                detector_score=float(det.score),
-                shadow=shadow,
-                length_m=m.length_m,
-                width_m=m.width_m,
-                area_m2=m.area_m2,
-                orientation_deg=m.orientation_deg,
-                heading_deg=float(headings[m.ping - chunk.ping_offset]),
-                anomaly_mean=anomaly_mean,
-                anomaly_max=anomaly_max,
-                texture=texture,
-                dropout_fraction=dropout_fraction,
-                motion="HIGH_MOTION" in flags,
-                near_nadir="NEAR_NADIR" in flags,
-                ground_range_m=m.ground_range_m,
-            )
-            if in_surface_band(det.box, band):
-                flags.append(SURFACE_RETURN_BAND)
-                rel = features["orientation_rel_track_deg"]
-                if suppress_surface and suppress_surface_detection(
-                    True, m.length_m, m.width_m, rel if math.isfinite(rel) else None
-                ):
-                    continue  # surface-return streak (ADR-018 §7)
-            uncertainty_m = (
-                position_uncertainty_m(
-                    ground_range_m=m.ground_range_m,
-                    altitude_m=altitude_m,
-                    ground_res_m=chunk.ground_res_m,
-                    speed_mps=speed_mps,
-                    layback_m=layback_m,
-                    layback_estimated=layback_estimated,
-                    config=cfg,
-                )
-                if chunk.geotagged
-                else None
-            )
-            chip_key = None
-            if chips_dir is not None:
-                chip_key = f"_tmp_{chunk.chunk_id}_{len(found)}"
-                write_chips(
-                    chips_dir,
-                    chip_key,
-                    chunk.image,
-                    det.box,
-                    mask,
-                    size_px=chip_px,
-                    heat=heat,
-                    heat_scale=2.0 * pixel_threshold if pixel_threshold > 0 else 1.0,
-                    shadow_band=shadow.band,
-                )
-            found.append(
-                to_survey(
-                    det,
-                    row_to_ping=chunk.row_to_ping,
-                    nadir_col=chunk.nadir_col,
-                    ground_res_m=chunk.ground_res_m,
-                    chunk_id=chunk.chunk_id,
-                    chunk_ping_range=chunk_range,
-                    extra={
-                        "measurement": m,
-                        "flags": flags,
-                        "dropout_fraction": dropout_fraction,
-                        "time_utc": iso_utc(chunk.nav["time_utc"].iloc[m.ping - chunk.ping_offset]),
-                        "pixel_bbox": [int(x1), int(y1), int(x2), int(y2)],
-                        "side": m.side,
-                        "anomaly_score": anomaly_mean,
-                        "shadow": shadow,
-                        "features": features,
-                        "chip_key": chip_key,
-                        "uncertainty_m": uncertainty_m,
-                    },
-                )
-            )
-
-        if mosaic is not None and chunk.geotagged:
-            try:
-                mosaic.add(chunk.image, chunk.geo_frame())
-            except Exception as exc:  # a mosaic problem must not fail the survey
-                logger.warning("Mosaic: chunk %s skipped: %s", chunk.chunk_id, exc)
-        if chunk.geotagged:
-            step = max(1, n_local // 100)
-            lat = chunk.nav["lat"].to_numpy(np.float64)[::step]
-            lon = chunk.nav["lon"].to_numpy(np.float64)[::step]
-            emit(
-                "track",
-                points=[
-                    [round(float(a), 6), round(float(b), 6)] for a, b in zip(lat, lon, strict=True)
-                ],
+                code=CHUNK_SKIPPED,
+                message=f"Chunk {chunk_index} failed twice and was skipped",
                 ping_start=chunk_range[0],
                 ping_end=chunk_range[1],
             )
+        else:
+            chunk, detections = result
+            found.extend(detections)
+            warnings |= set(chunk.warnings)
+            bottom_tracked |= NO_ALTITUDE_BOTTOM_TRACKED in chunk.warnings
+            for event in chunk.quality_events:
+                target = dropout if event["code"] == "DROPOUT" else motion
+                target[event["ping_start"] : event["ping_end"] + 1] = True
+                emit(
+                    "warning",
+                    code=event["code"],
+                    message=f"{event['code']} pings",
+                    ping_start=event["ping_start"],
+                    ping_end=event["ping_end"],
+                )
+            if mosaic is not None and chunk.geotagged:
+                try:
+                    mosaic.add(chunk.image, chunk.geo_frame())
+                except Exception as exc:  # a mosaic problem must not fail the survey
+                    logger.warning("Mosaic: chunk %s skipped: %s", chunk.chunk_id, exc)
+            if chunk.geotagged:
+                n_local = len(chunk.nav)
+                step = max(1, n_local // 100)
+                lat = chunk.nav["lat"].to_numpy(np.float64)[::step]
+                lon = chunk.nav["lon"].to_numpy(np.float64)[::step]
+                emit(
+                    "track",
+                    points=[
+                        [round(float(a), 6), round(float(b), 6)]
+                        for a, b in zip(lat, lon, strict=True)
+                    ],
+                    ping_start=chunk_range[0],
+                    ping_end=chunk_range[1],
+                )
         done = min(chunk_range[1] + 1, log.n_pings)
         emit(
             "progress",
             stage="detect",
-            percent=round(10.0 + 80.0 * (chunk.chunk_id + 1) / n_chunks, 1),
+            percent=round(10.0 + 80.0 * (chunk_index + 1) / n_chunks, 1),
             pings_done=done,
             pings_total=log.n_pings,
         )
@@ -752,6 +697,204 @@ def _detect_waterfall(
         "warnings": sorted(warnings),
     }
     return found, quality
+
+
+def _chunk_detections(
+    chunk: ProcessedChunk,
+    log: SonarLog,
+    cfg: dict[str, Any],
+    model: Detector,
+    anomaly_model: Any | None,
+    *,
+    chips_dir: Path | None,
+    chip_px: int,
+    pixel_threshold: float,
+    speed_mps: float,
+    surface_tolerance: float,
+    suppress_surface: bool,
+    layback_estimated: bool,
+    layback_m: float | None,
+    first_index: int,
+    written: list[str],
+) -> list[SurveyDetection]:
+    """Tiles → detector → merge → measurement, score inputs and chips for one processed chunk.
+
+    Emits nothing, so a failed attempt leaves no events behind; chip keys are appended to
+    ``written`` so the caller can remove them before retrying.
+    """
+    tiling = cfg["tiling"]
+    min_raw = float(cfg["detection"]["min_raw_score"])
+    height, width = chunk.image.shape
+    skip = row_col_mask((height, width), rows=chunk.masks["dropout"])
+    tiles, pixels = [], []
+    for tile, px in iter_tiles(
+        chunk.image_3ch,
+        mask=skip,
+        size=tiling["size_px"],
+        overlap=tiling["overlap"],
+        skip_if_masked_fraction_gt=tiling["skip_if_masked_fraction_gt"],
+    ):
+        tiles.append(tile)
+        pixels.append(px)
+    per_tile: list[list[RawDetection]] = []
+    for start in range(0, len(pixels), BATCH_TILES):
+        per_tile += model.predict(pixels[start : start + BATCH_TILES])
+    merged = merge_detections(tiles_to_image(per_tile, tiles, (height, width)))
+
+    heat = None
+    if anomaly_model is not None and pixels:
+        heat = _anomaly_heat(anomaly_model, pixels, tiles, (height, width))
+        min_px = max(1, round(float(cfg["anomaly"]["min_region_m2"]) / chunk.ground_res_m**2))
+        merged += heat_regions(
+            heat,
+            pixel_threshold,
+            min_area_px=min_px,
+            exclude_boxes=[d.box for d in merged],
+        )
+
+    geometry = chunk.image_geometry()
+    n_local = len(chunk.nav)
+    chunk_range = (chunk.ping_offset, chunk.ping_offset + n_local - 1)
+    nav_source = chunk.nav["nav_source"].to_numpy(dtype=object)
+    headings = chunk.nav["heading_deg"].to_numpy(np.float64)
+    texture = chunk.image_3ch[..., 2]
+    local_rows = chunk.row_to_ping - chunk.ping_offset
+    band = surface_band_mask(
+        chunk.nav["sensor_depth_m"].to_numpy(np.float64)[local_rows],
+        chunk.altitude_m[local_rows],
+        chunk.nadir_col,
+        width,
+        chunk.ground_res_m,
+        tolerance_m=surface_tolerance,
+    )
+    # The despeckle/texture/median filters mirror the image at its borders, so the first and
+    # last rows of the *line* are noisier than the rest; chunk borders inside the line are
+    # covered by the overlap and are not affected.
+    edge = int(cfg["preprocess"]["local_std_window"])
+    # The same filters spread a masked dropout gap into its neighbouring rows (TC-ROB-001).
+    near_dropout = _dilate_rows(chunk.masks["dropout"], edge)
+    line_start = chunk_range[0] == 0
+    line_end = chunk_range[1] >= log.n_pings - 1
+    out: list[SurveyDetection] = []
+    for det in merged:
+        if det.score < min_raw:
+            continue
+        x1, y1, x2, y2 = det.box
+        if (line_start and y1 < edge) or (line_end and y2 > height - edge):
+            continue
+        mask = det.full_mask()
+        m = measure_mask(mask, geometry, row0=y1, col0=x1)
+        local = chunk.row_to_ping[y1:y2] - chunk.ping_offset
+        flags = []
+        if near_dropout[y1:y2].any():
+            flags.append("DROPOUT")
+        if chunk.masks["motion"][y1:y2].any():
+            flags.append("HIGH_MOTION")
+        altitude = chunk.altitude_m[local]
+        finite_altitude = altitude[np.isfinite(altitude)]
+        altitude_m = float(np.median(finite_altitude)) if finite_altitude.size else None
+        if altitude_m is not None and m.ground_range_m < 0.3 * altitude_m:
+            flags.append("NEAR_NADIR")
+        if (nav_source[local] == "interpolated").any():
+            flags.append("GPS_INTERPOLATED")
+        if NO_ALTITUDE_BOTTOM_TRACKED in chunk.warnings:
+            flags.append(NO_ALTITUDE_BOTTOM_TRACKED)
+        if not chunk.geotagged:
+            flags.append(NOT_GEOTAGGED)
+        if x1 <= 0 or x2 >= width:
+            flags.append("TILE_EDGE")  # cut by the swath edge (ADR-017 §5)
+        if layback_estimated:
+            flags.append(LAYBACK_ESTIMATED)
+
+        dropout_fraction = float(near_dropout[y1:y2].mean())
+        shadow = shadow_score(
+            chunk.image,
+            mask,
+            det.box,
+            nadir_col=chunk.nadir_col,
+            ground_res_m=chunk.ground_res_m,
+            altitude_m=altitude_m,
+        )
+        anomaly_mean, anomaly_max = _anomaly_stats(heat, det, pixel_threshold)
+        features = detection_features(
+            chunk.image,
+            mask,
+            det.box,
+            cls=det.cls,
+            detector_score=float(det.score),
+            shadow=shadow,
+            length_m=m.length_m,
+            width_m=m.width_m,
+            area_m2=m.area_m2,
+            orientation_deg=m.orientation_deg,
+            heading_deg=float(headings[m.ping - chunk.ping_offset]),
+            anomaly_mean=anomaly_mean,
+            anomaly_max=anomaly_max,
+            texture=texture,
+            dropout_fraction=dropout_fraction,
+            motion="HIGH_MOTION" in flags,
+            near_nadir="NEAR_NADIR" in flags,
+            ground_range_m=m.ground_range_m,
+        )
+        if in_surface_band(det.box, band):
+            flags.append(SURFACE_RETURN_BAND)
+            rel = features["orientation_rel_track_deg"]
+            if suppress_surface and suppress_surface_detection(
+                True, m.length_m, m.width_m, rel if math.isfinite(rel) else None
+            ):
+                continue  # surface-return streak (ADR-018 §7)
+        uncertainty_m = (
+            position_uncertainty_m(
+                ground_range_m=m.ground_range_m,
+                altitude_m=altitude_m,
+                ground_res_m=chunk.ground_res_m,
+                speed_mps=speed_mps,
+                layback_m=layback_m,
+                layback_estimated=layback_estimated,
+                config=cfg,
+            )
+            if chunk.geotagged
+            else None
+        )
+        chip_key = None
+        if chips_dir is not None:
+            chip_key = f"_tmp_{chunk.chunk_id}_{first_index + len(out)}"
+            written.append(chip_key)
+            write_chips(
+                chips_dir,
+                chip_key,
+                chunk.image,
+                det.box,
+                mask,
+                size_px=chip_px,
+                heat=heat,
+                heat_scale=2.0 * pixel_threshold if pixel_threshold > 0 else 1.0,
+                shadow_band=shadow.band,
+            )
+        out.append(
+            to_survey(
+                det,
+                row_to_ping=chunk.row_to_ping,
+                nadir_col=chunk.nadir_col,
+                ground_res_m=chunk.ground_res_m,
+                chunk_id=chunk.chunk_id,
+                chunk_ping_range=chunk_range,
+                extra={
+                    "measurement": m,
+                    "flags": flags,
+                    "dropout_fraction": dropout_fraction,
+                    "time_utc": iso_utc(chunk.nav["time_utc"].iloc[m.ping - chunk.ping_offset]),
+                    "pixel_bbox": [int(x1), int(y1), int(x2), int(y2)],
+                    "side": m.side,
+                    "anomaly_score": anomaly_mean,
+                    "shadow": shadow,
+                    "features": features,
+                    "chip_key": chip_key,
+                    "uncertainty_m": uncertainty_m,
+                },
+            )
+        )
+    return out
 
 
 def _detect_geotiff(

@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 
+import { useBasemap } from '../settings/basemap';
 import styles from './AppBar.module.css';
 
 export const PRIMARY_NAV = [
@@ -19,8 +20,9 @@ function linkClass({ isActive }: { isActive: boolean }) {
   return isActive ? `${styles.link} ${styles.active}` : styles.link;
 }
 
-/** App bar from the global layout (docs/wireframes/README.md §3). */
+/** App bar from the global layout (docs/wireframes/README.md §3), with the offline-tiles badge (ST-099). */
 export function AppBar() {
+  const basemap = useBasemap();
   return (
     <header className={styles.bar}>
       <span className={styles.logo} aria-label="SonarSentinel">
@@ -33,6 +35,11 @@ export function AppBar() {
           </NavLink>
         ))}
       </nav>
+      {basemap.offline && (
+        <span role="status" className={styles.offline} title="Map tiles are served from the local MBTiles file">
+          Offline — local tiles
+        </span>
+      )}
       <nav aria-label="Secondary" className={styles.nav}>
         {SECONDARY_NAV.map((item) => (
           <NavLink key={item.to} to={item.to} className={linkClass}>

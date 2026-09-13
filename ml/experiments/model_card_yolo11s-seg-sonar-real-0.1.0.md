@@ -26,7 +26,7 @@
 | Classes | `shipwreck, pipe, cylinder, ghost_net, debris_other` — **only `cylinder` has training data** |
 | Pretraining | COCO weights from Ultralytics (`yolo11s-seg.pt`) |
 | Training config | `args.yaml` / `train_record.json` next to the weights: 20 epochs, imgsz 640, batch 8, freeze 10, cosine LR, flips, brightness 0.3, scale 0.3, mosaic (off for the last 5 epochs), copy-paste 0.4 |
-| Files | `best.pt` (19.6 MB) |
+| Files | `best.pt` (19.6 MiB) · `best.onnx` (38.7 MiB) |
 | Licence | Ultralytics YOLO11 is AGPL-3.0 (compatible with the project licence); training data CC BY 4.0 (mine-SSS D2). See [Licences](../../docs/legal/LICENSES_AND_COMPLIANCE.md) |
 
 ## 2. Intended use
@@ -64,7 +64,7 @@
 | mAP@50 (mask) | 0.280 | report |
 | Ghost-net recall (TD-09) | 0.00 (no ghost-net training data; 37 of 329 nets detected as `cylinder`) | ≥ 0.80 |
 | FP per km² | not measured | ≥ 50% reduction vs. detector-only |
-| ECE | not calibrated (identity calibrator) | ≤ 0.10 |
+| ECE | 0.048 out of fold on the calib split with `calibrator/isotonic@0.1.0` (95% CI 0.027–0.080; fitted on this CPU baseline, [EXP-20260913-scoring](EXP-20260913-scoring.md)) | ≤ 0.10 |
 
 ### 5.2 Per class (validation, conf 0.25)
 
@@ -110,7 +110,7 @@ det = YoloDetector("models/detector/yolo11s-seg-sonar-real/0.1.0/best.pt", sahi=
 detections = det.predict(tiles_3ch)  # tiles from the SonarSentinel preprocessing pipeline only
 ```
 
-**Thresholds:** `conf` 0.20 (adapter default); tiers use the identity calibrator until ST-064.
+**Thresholds:** `conf` 0.20 (adapter default); tiers use `calibrator/isotonic@0.1.0` when its file is present (identity otherwise). Almost all real-seabed detections fall in the `hidden` tier with this calibrator.
 
 ## 10. Promotion checklist
 - [ ] Metrics ≥ previous model on the frozen test set — not applicable yet

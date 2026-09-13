@@ -32,7 +32,13 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from sonarsentinel.errors import JobNotCancellableError, NotFoundError, SonarSentinelError
+from sonarsentinel.config import DEFAULT_JOB_TIMEOUT_S
+from sonarsentinel.errors import (
+    JobNotCancellableError,
+    JobTimeoutError,
+    NotFoundError,
+    SonarSentinelError,
+)
 from sonarsentinel.report.builder import now_utc
 from sonarsentinel.storage import repository as repo
 from sonarsentinel.storage.db import Database
@@ -120,6 +126,16 @@ class JobManager:
     @property
     def results_dir(self) -> Path:
         return self.data_dir / "results"
+
+    @property
+    def job_timeout_s(self) -> float:
+        """``jobs.max_job_seconds`` (``SS_JOB_TIMEOUT_S``); 0 or less disables the limit."""
+        return float(self.config.get("jobs", {}).get("max_job_seconds", DEFAULT_JOB_TIMEOUT_S))
+
+    @property
+    def keep_work_files(self) -> bool:
+        """Keep ``work/<survey_id>`` after a job (``SS_KEEP_WORK_FILES``)."""
+        return bool(self.config.get("api", {}).get("keep_work_files", False))
 
     def add_listener(self, listener: EventListener) -> None:
         """Call ``listener(event)`` for every job event (on the worker thread, after logging)."""
@@ -262,6 +278,17 @@ class JobManager:
         state = _JobState(log_path=log_path)
         work_dir = self.data_dir / "work" / request.survey_id
         runner = self._runner or run_survey
+        started = time.monotonic()
+        limit_s = self.job_timeout_s
+        timed_out = threading.Event()
+
+        def should_cancel() -> bool:
+            # The per-job timeout (ADR-019) uses the cancel path: it stops at the next chunk.
+            if not flag.is_set() and limit_s > 0 and time.monotonic() - started > limit_s:
+                timed_out.set()
+                flag.set()
+            return flag.is_set()
+
         try:
             config, kwargs = self._prepare(request)
             report = runner(
@@ -269,7 +296,7 @@ class JobManager:
                 config=config,
                 survey_id=request.survey_id,
                 on_event=lambda event: self._on_event(request, state, event),
-                should_cancel=flag.is_set,
+                should_cancel=should_cancel,
                 work_dir=work_dir,
                 results_dir=self.results_dir,  # chips under results/<survey_id>/chips (ST-073)
                 **kwargs,
@@ -290,7 +317,15 @@ class JobManager:
                 paths={fmt: str(path) for fmt, path in paths.items()},
             )
         except PipelineCancelled:
-            self._finish(request, state, "cancelled")
+            if timed_out.is_set():
+                timeout = JobTimeoutError(
+                    f"Job {request.job_id} ran longer than {limit_s:g} s and was stopped",
+                    job_id=request.job_id,
+                    max_job_seconds=limit_s,
+                )
+                self._finish(request, state, "failed", error=timeout.to_dict())
+            else:
+                self._finish(request, state, "cancelled")
         except SonarSentinelError as exc:
             self._finish(request, state, "failed", error=exc.to_dict())
         except Exception as exc:
@@ -303,14 +338,21 @@ class JobManager:
             self._finish(request, state, "failed", error=error)
         finally:
             self._cancel.pop(request.job_id, None)
-            shutil.rmtree(work_dir, ignore_errors=True)
+            if not self.keep_work_files:
+                shutil.rmtree(work_dir, ignore_errors=True)
 
     def _prepare(self, request: JobRequest) -> tuple[dict[str, Any], dict[str, Any]]:
-        """Job configuration and pipeline arguments from the upload options."""
+        """Job configuration and pipeline arguments: saved settings, then upload options."""
         from sonarsentinel.cli import build_anomaly, build_detector
+        from sonarsentinel.settings import apply_settings, detector_name, saved_settings
 
         options = request.options
-        config = copy.deepcopy(self.config)
+        settings = saved_settings(self.data_dir, self.config)
+        config = (
+            apply_settings(self.config, settings)
+            if settings is not None
+            else copy.deepcopy(self.config)
+        )
         if options.get("ground_resolution_m") is not None:
             preprocess = config.setdefault("preprocess", {})
             preprocess["ground_resolution_m"] = float(options["ground_resolution_m"])
@@ -321,12 +363,15 @@ class JobManager:
         if options.get("manual_layback_m") is not None:
             navigation = config.setdefault("navigation", {})
             navigation["manual_layback_m"] = float(options["manual_layback_m"])
+        detector = str(options.get("detector_model") or "auto")
+        if detector == "auto" and settings is not None:
+            detector = detector_name(settings["detection"]["model_id"])
         epsg = options.get("utm_epsg", "auto")
         kwargs: dict[str, Any] = {
             "nav_csv": request.nav_csv,
             "epsg": None if epsg in (None, "auto") else epsg,
             "allow_no_gps": bool(options.get("allow_no_gps", False)),
-            "detector": build_detector(str(options.get("detector_model") or "auto"), None, config),
+            "detector": build_detector(detector, None, config),
             "anomaly_model": build_anomaly(config, not options.get("anomaly_scan", True)),
             "survey_name": options.get("name"),
             "min_conf": options.get("min_conf"),

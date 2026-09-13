@@ -8,7 +8,7 @@
 
 **Related:** [Contributing](../../CONTRIBUTING.md) · [Deployment](../architecture/07-deployment.md) · [Operations Runbook](OPERATIONS_RUNBOOK.md)
 
-> Commands marked *(planned)* depend on files created in Sprint 0 (ST-001…ST-006). Update this guide in the PR that creates them.
+> Checked against the Sprint 6 implementation (ST-114). Update this guide in the PR that changes a command.
 
 ---
 
@@ -43,12 +43,12 @@ cd sonarsentinel
 
 ### 3.1 Create the conda environment (`backend/environment.yml`)
 
-The environment holds the core, geospatial and developer tools used from Sprint 0 to Sprint 2. ML packages are added in Sprint 3 (§3.2), which keeps the first setup fast and avoids PyTorch/anomalib version conflicts.
+The environment holds the core, geospatial and developer tools used from Sprint 0 to Sprint 2. ML packages are added in Sprint 3 (§3.2), which keeps the first setup fast and avoids PyTorch version conflicts.
 
 | File | Contents | When |
 |---|---|---|
 | `backend/environment.yml` | Python 3.11, NumPy/SciPy/pandas, GDAL, rasterio, pyproj, Shapely, PyYAML, Typer, pytest, ruff, mypy, pre-commit; pip: pyxtf, OpenCV (headless), types-PyYAML | Sprint 0 onwards |
-| `backend/requirements-ml.txt` | Ultralytics, SAHI, anomalib, LightGBM, scikit-learn, ONNX Runtime | Sprint 3, after PyTorch (§3.2) |
+| `backend/requirements-ml.txt` | Ultralytics, SAHI, LightGBM, scikit-learn, ONNX Runtime, onnx, onnxslim (no anomalib, ADR-016) | Sprint 3, after PyTorch (§3.2) |
 | `backend/pyproject.toml` extras | `[dev]`, `[geo]`, `[api]` | As needed |
 
 ```bash
@@ -59,7 +59,7 @@ conda activate sonarsentinel
 > **Windows, Miniforge installed without "Add to PATH":** open the **Miniforge Prompt** from the Start menu, or call conda directly, e.g. `%USERPROFILE%\miniforge3\Scripts\conda.exe run -n sonarsentinel pytest`.
 
 ### 3.2 Install PyTorch correctly (GPU or CPU)
-Install PyTorch **before** relying on Ultralytics/anomalib, so a CPU-only build isn't pulled in by accident:
+Install PyTorch **before** relying on Ultralytics, so the intended CPU or CUDA build is used:
 
 1. Open https://pytorch.org/get-started/locally/ and select your OS, `pip`, Python and CUDA version (or CPU).
 2. Run the command it shows inside the activated environment.
@@ -75,7 +75,7 @@ python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
 pip install -r backend/requirements-ml.txt
 ```
 
-> Pin exact versions of `torch`, `ultralytics`, `anomalib` and `lightning` in `backend/requirements-ml.lock.txt` once a working combination is found. anomalib is sensitive to torch/lightning versions.
+> The verified versions below are pinned for Docker in `backend/requirements-docker.txt` (Sprint 6).
 
 **Verified combination (2026-09-13, Windows 11, CPU only):** `torch 2.14.0+cpu`, `torchvision 0.29.0+cpu`, `ultralytics 8.4.150`, `sahi 0.12.6`, `onnxruntime 1.30.0`, `scikit-learn 1.9.1`, `lightgbm 4.7.0`, with NumPy 2.4.6 and OpenCV 5.0 unchanged. CPU wheels:
 
@@ -129,7 +129,7 @@ python -c "import rasterio, pyproj, cv2, pyxtf; from osgeo import gdal; print('G
 
 ```bash
 python scripts/fetch_test_data.py          # downloads fixtures listed in scripts/test_data_manifest.json and verifies SHA-256 (manifest is empty until fixtures are chosen)
-python tests/tools/make_synthetic_xtf.py   # (planned, Sprint 1) generates the TD-01 synthetic survey
+python backend/tests/tools/make_synthetic_xtf.py   # generates the TD-01 synthetic survey
 
 cd backend                                 # pyproject.toml (ruff, mypy, pytest config) lives here; CI runs the same commands
 ruff check . ../scripts
@@ -144,8 +144,10 @@ pytest --cov=sonarsentinel --cov-report=term-missing
 # copy and edit environment settings
 cp .env.example .env            # Windows PowerShell: Copy-Item .env.example .env
 
-sonarsentinel serve --host 127.0.0.1 --port 8000 --reload   # (planned, Sprint 3: ST-080) currently prints "not implemented"
-# API docs (once the API exists): http://127.0.0.1:8000/docs
+# the application does not read .env itself: export the variables in your shell (or use Docker Compose)
+sonarsentinel serve --host 127.0.0.1 --port 8000            # real API; data in SS_DATA_DIR (default data/api)
+sonarsentinel serve --mock                                   # canned surveys and events for frontend work
+# API docs: http://127.0.0.1:8000/docs
 ```
 
 **`.env.example`**
@@ -158,42 +160,39 @@ SS_MAX_UPLOAD_GB=2
 SS_WORKERS=1
 SS_LOG_LEVEL=INFO
 # SS_OFFLINE_TILES=./tiles/basemap.mbtiles
+# SS_KEEP_WORK_FILES=false
+# SS_JOB_TIMEOUT_S=3600
 ```
 
-**CLI commands available now (Sprint 0 scaffold):**
+Variables are validated at startup; see the [Operations Runbook §2](OPERATIONS_RUNBOOK.md#2-deploy-first-install) for their effect.
+
+**CLI commands:**
 ```bash
 sonarsentinel version                          # package version
 sonarsentinel validate line_07.xtf nav.csv     # stage S0: type, size and header checks
 sonarsentinel config                           # pipeline_version and config hash
+sonarsentinel detect data/samples/line_07.xtf --out results/ --formats json,csv,geojson,kml
+sonarsentinel watch /acquisition --out results/ --alerts-min-conf 80   # edge watch mode
 ```
 
-**Planned (Sprint 3: ST-074/ST-075):**
-```bash
-sonarsentinel detect data/samples/line_07.xtf --out results/ --formats json,csv
-```
-
-## 6. Run the frontend *(planned)*
+## 6. Run the frontend
 
 ```bash
 cd frontend
 npm ci
-npm run api:types      # generate TypeScript types from http://127.0.0.1:8000/openapi.json
 npm run dev            # Vite dev server at http://localhost:5173 (proxies /api and /ws to :8000)
 ```
 
-Frontend without the backend (mock API with sample events):
-```bash
-npm run mock           # mock server on :8000 from the OpenAPI spec + recorded WebSocket events
-npm run dev
-```
+Frontend without the real backend: run `sonarsentinel serve --mock` in another terminal, then `npm run dev`.
 
-Frontend tests:
+Frontend checks (same as CI):
 ```bash
-npm run lint && npm run typecheck && npm test
-npx playwright install && npm run e2e
+npm run lint && npm run typecheck && npm test && npm run build
+npm audit --audit-level=critical
 ```
+End-to-end tests (Playwright) are not part of this release.
 
-## 7. Full stack with Docker *(planned)*
+## 7. Full stack with Docker
 
 ```bash
 docker compose -f docker/docker-compose.yml up -d --build
@@ -201,7 +200,7 @@ docker compose -f docker/docker-compose.yml up -d --build
 docker compose -f docker/docker-compose.yml logs -f backend
 docker compose -f docker/docker-compose.yml down
 ```
-CPU-only machines: remove the GPU `deploy.resources` block or use `docker-compose.cpu.yml`.
+The base Compose file is CPU-only. On a Linux host with the NVIDIA Container Toolkit add `-f docker/docker-compose.gpu.yml`; the edge watch service is in `docker/docker-compose.edge.yml`. Details: [docker/README.md](../../docker/README.md).
 
 ## 8. Data and models
 
@@ -256,7 +255,7 @@ Details: [Data Management Plan](../data/DATA_MANAGEMENT_PLAN.md) and [Datasets](
 | `ImportError: DLL load failed` for GDAL/rasterio | Mixed pip and conda GDAL | Recreate env; install GDAL/rasterio **only** from conda-forge |
 | `torch.cuda.is_available()` is `False` | CPU wheel installed or driver/CUDA mismatch | Reinstall with the pytorch.org command for your CUDA; update driver |
 | Two OpenCV packages conflict | `opencv-python` and `opencv-python-headless` both installed (Ultralytics may add one) | `pip uninstall opencv-python opencv-python-headless -y` then install one (headless for servers) |
-| anomalib import errors | Version mismatch with torch/lightning | Use the pinned lock file versions |
+| `OMP: Error #15` when importing torch | Conda NumPy/SciPy and pip PyTorch load two OpenMP runtimes | Set `KMP_DUPLICATE_LIB_OK=TRUE` (the training scripts and tests do) |
 | pyxtf can't read a file | XTF variant not supported | Try the alternative pyxtf implementation; open an issue with the file header dump |
 | Port 8000/5173 already in use | Another process | Change `--port` or stop the process |
 | Docker GPU not visible | NVIDIA Container Toolkit missing (Linux) or WSL GPU support not enabled | Install toolkit; update Docker Desktop and NVIDIA driver |

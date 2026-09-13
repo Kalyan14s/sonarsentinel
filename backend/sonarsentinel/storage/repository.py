@@ -9,7 +9,7 @@ from collections.abc import Iterable
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from sonarsentinel.errors import NotFoundError
@@ -303,16 +303,70 @@ def job_for_survey(session: Session, survey_id: str) -> Job | None:
     return session.scalar(select(Job).where(Job.survey_id == survey_id))
 
 
-def list_surveys(session: Session, *, limit: int, offset: int) -> tuple[int, list[Survey]]:
-    """Newest surveys first."""
-    total = int(session.scalar(select(func.count()).select_from(Survey)) or 0)
+def list_surveys(
+    session: Session,
+    *,
+    limit: int,
+    offset: int,
+    q: str | None = None,
+    project: str | None = None,
+    statuses: Iterable[str] = (),
+    created_from: str | None = None,
+    created_before: str | None = None,
+) -> tuple[int, list[Survey]]:
+    """Newest surveys first, filtered by name/file text, project, status and creation time."""
+    stmt = select(Survey)
+    if q:
+        escaped = q.lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        pattern = f"%{escaped}%"
+        files = select(SourceFile.survey_id).where(
+            func.lower(SourceFile.filename).like(pattern, escape="\\")
+        )
+        stmt = stmt.where(
+            or_(
+                func.lower(Survey.name).like(pattern, escape="\\"),
+                Survey.survey_id.in_(files),
+            )
+        )
+    if project:
+        stmt = stmt.where(Survey.project_id == project_id_for(project))
+    wanted = list(statuses)
+    if wanted:
+        stmt = stmt.where(Survey.status.in_(wanted))
+    if created_from:
+        stmt = stmt.where(Survey.created_utc >= created_from)
+    if created_before:
+        stmt = stmt.where(Survey.created_utc < created_before)
+    total = int(session.scalar(select(func.count()).select_from(stmt.subquery())) or 0)
     rows = session.scalars(
-        select(Survey)
-        .order_by(Survey.created_utc.desc(), Survey.survey_id.desc())
+        stmt.order_by(Survey.created_utc.desc(), Survey.survey_id.desc())
         .limit(limit)
         .offset(offset)
     ).all()
     return total, list(rows)
+
+
+def survey_size_bytes(session: Session, survey_id: str) -> int:
+    """Total size of a survey's uploaded source files."""
+    total = session.scalar(
+        select(func.coalesce(func.sum(SourceFile.size_bytes), 0)).where(
+            SourceFile.survey_id == survey_id
+        )
+    )
+    return int(total or 0)
+
+
+def delete_survey(session: Session, survey_id: str) -> None:
+    """Delete a survey and every row that belongs to it (projects and model versions stay)."""
+    detection_ids = select(Detection.detection_id).where(Detection.survey_id == survey_id)
+    session.execute(delete(Review).where(Review.detection_id.in_(detection_ids)))
+    session.execute(delete(Detection).where(Detection.survey_id == survey_id))
+    session.execute(delete(Report).where(Report.survey_id == survey_id))
+    session.execute(delete(TrackSegment).where(TrackSegment.survey_id == survey_id))
+    session.execute(delete(QualityEvent).where(QualityEvent.survey_id == survey_id))
+    session.execute(delete(SourceFile).where(SourceFile.survey_id == survey_id))
+    session.execute(delete(Job).where(Job.survey_id == survey_id))
+    session.execute(delete(Survey).where(Survey.survey_id == survey_id))
 
 
 def source_filenames(session: Session, survey_id: str) -> list[str]:

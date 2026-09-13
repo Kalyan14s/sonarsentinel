@@ -27,7 +27,8 @@ def test_health(client: TestClient) -> None:
     body = client.get(f"{API_PREFIX}/health").json()
     assert body["status"] == "ok" and body["version"] == __version__
     assert set(body["gpu"]) == {"available", "name"}
-    assert body["runtime"] in ("cpu", "cuda") and isinstance(body["models_loaded"], bool)
+    assert body["runtime"] in ("cuda", "onnxruntime", "torch", "classical")
+    assert isinstance(body["models_loaded"], bool) and body["offline_tiles"] is False
 
 
 def test_models(client: TestClient) -> None:

@@ -1,8 +1,10 @@
-"""Synthetic XTF survey generator: test data TD-01 (and TD-05 variants).
+"""Synthetic XTF survey generator: test data TD-01 (and TD-05 / TD-07 variants).
 
 Writes a dual-channel side-scan XTF file with a known track (straight or curved), altitude, heading
-and bright point targets at known positions, and returns the ground truth. Used by the golden
-geotagging and XTF reader tests; can also be run from the command line::
+and bright point targets at known positions, and returns the ground truth. Optional faults produce
+the TD-07 robustness variants (zeroed pings, GPS gap, strong roll, no altitude, heavy speckle);
+with the defaults the output is unchanged. Used by the golden geotagging, XTF reader and
+robustness tests; can also be run from the command line::
 
     python tests/tools/make_synthetic_xtf.py out.xtf --pings 2000 --track curved --utm-epsg 32644
 """
@@ -12,10 +14,11 @@ from __future__ import annotations
 import argparse
 import ctypes
 import json
+import math
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 from pyproj import Geod, Transformer
@@ -64,6 +67,7 @@ class SyntheticSurvey:
     targets: list[Target] = field(default_factory=list)
     background_level: int = 0
     target_level: int = 0
+    faults: dict[str, Any] = field(default_factory=dict)
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), indent=2)
@@ -91,6 +95,19 @@ def make_track(
     return lats, lons, headings
 
 
+def _ranges(mask: np.ndarray) -> list[tuple[int, int]]:
+    """``(start, stop)`` runs of True values (stop exclusive)."""
+    runs: list[tuple[int, int]] = []
+    start = None
+    for i, value in enumerate(mask.tolist() + [False]):
+        if value and start is None:
+            start = i
+        elif not value and start is not None:
+            runs.append((start, i))
+            start = None
+    return runs
+
+
 def write_synthetic_xtf(
     path: str | Path,
     *,
@@ -111,6 +128,14 @@ def write_synthetic_xtf(
     seed: int = 0,
     write_ship_position: bool = True,
     write_sensor_position: bool = True,
+    dropout_pings: list[tuple[int, int]] | None = None,
+    dropout_fraction: float = 0.0,
+    gps_gap: tuple[int, int] | None = None,
+    gps_gap_s: float = 0.0,
+    roll_deg_amplitude: float = 0.0,
+    roll_period_pings: int = 200,
+    write_altitude: bool = True,
+    speckle_sigma: float = 0.0,
 ) -> SyntheticSurvey:
     """Write a synthetic XTF file and return its ground truth.
 
@@ -134,8 +159,17 @@ def write_synthetic_xtf(
         seed: Random seed for the speckle background.
         write_ship_position: Also fill ``ShipX/Ycoordinate`` (same as the sensor).
         write_sensor_position: Fill ``SensorX/Ycoordinate``.
+        dropout_pings: TD-07: ``(start, stop)`` ping ranges whose samples are all zero.
+        dropout_fraction: TD-07: zero this fraction of pings in random 10-ping runs.
+        gps_gap: TD-07: ``(start, stop)`` ping range written without a position fix (0, 0).
+        gps_gap_s: TD-07: a gap of this many seconds in the middle of the line.
+        roll_deg_amplitude: TD-07: sinusoidal roll of this amplitude (default: constant 0.5°).
+        roll_period_pings: Period of the roll sinusoid.
+        write_altitude: TD-07: ``False`` writes altitude 0 (no altitude in the file).
+        speckle_sigma: TD-07: multiplicative gamma speckle with this relative spread.
     """
     rng = np.random.default_rng(seed)
+    fault_rng = np.random.default_rng(seed + 7919)  # faults never change the base random stream
     lats, lons, headings = make_track(n_pings, track, heading_deg=heading_deg, step_m=step_m)
     if targets is None:
         targets = [
@@ -144,6 +178,23 @@ def write_synthetic_xtf(
             (3 * n_pings // 4, "starboard", 9 * samples_per_side // 10),
             (n_pings // 2, "starboard", samples_per_side // 5),
         ]
+
+    zeroed = np.zeros(n_pings, dtype=bool)
+    for start, stop in dropout_pings or []:
+        zeroed[max(start, 0) : min(stop, n_pings)] = True
+    if dropout_fraction > 0:
+        want = round(dropout_fraction * n_pings)
+        while zeroed.sum() < want:
+            first = int(fault_rng.integers(0, max(n_pings - 10, 1)))
+            zeroed[first : first + 10] = True
+    no_fix = np.zeros(n_pings, dtype=bool)
+    if gps_gap is not None:
+        no_fix[max(gps_gap[0], 0) : min(gps_gap[1], n_pings)] = True
+    if gps_gap_s > 0:
+        gap = round(gps_gap_s / ping_interval_s)
+        first = max((n_pings - gap) // 2, 0)
+        no_fix[first : first + gap] = True
+    speckle_shape = 1.0 / speckle_sigma**2 if speckle_sigma > 0 else 0.0
 
     xs, ys = lons, lats
     nav_units = 3
@@ -197,15 +248,17 @@ def write_synthetic_xtf(
             ping.HSeconds = t.microsecond // 10_000
             ping.JulianDay = t.timetuple().tm_yday
             ping.PingNumber = i
-            if write_sensor_position:
+            if write_sensor_position and not no_fix[i]:
                 ping.SensorXcoordinate, ping.SensorYcoordinate = float(xs[i]), float(ys[i])
-            if write_ship_position:
+            if write_ship_position and not no_fix[i]:
                 ping.ShipXcoordinate, ping.ShipYcoordinate = float(xs[i]), float(ys[i])
             ping.SensorHeading = float(headings[i])
-            ping.SensorPrimaryAltitude = altitude_m
+            ping.SensorPrimaryAltitude = altitude_m if write_altitude else 0.0
             ping.SensorDepth = sensor_depth_m
             ping.SensorSpeed = step_m / ping_interval_s * KNOTS_PER_MPS
             ping.SensorRoll, ping.SensorPitch = 0.5, -0.3
+            if roll_deg_amplitude:
+                ping.SensorRoll = roll_deg_amplitude * math.sin(2 * math.pi * i / roll_period_pings)
             ping.CableOut, ping.Layback = 25, 0.0
 
             chans, data = [], []
@@ -228,6 +281,11 @@ def write_synthetic_xtf(
                     samples[:water] = 5  # dark water column next to nadir
                 for s in lookup.get((i, side), []):
                     samples[s : s + target_extent[1]] = target_level
+                if speckle_shape:
+                    noise = fault_rng.gamma(speckle_shape, 1.0 / speckle_shape, samples_per_side)
+                    samples = (samples * noise).clip(0, 65535).astype(np.uint16)
+                if zeroed[i]:
+                    samples = np.zeros_like(samples)
                 if side == "port" and port_order == "far_first":
                     samples = samples[::-1].copy()
                 chans.append(chan)
@@ -238,6 +296,17 @@ def write_synthetic_xtf(
             assert len(raw) == record_size
             fh.write(raw)
 
+    faults: dict[str, Any] = {}
+    if zeroed.any():
+        faults["dropout_pings"] = _ranges(zeroed)
+    if no_fix.any():
+        faults["gps_gap_pings"] = _ranges(no_fix)
+    if roll_deg_amplitude:
+        faults["roll_deg_amplitude"] = roll_deg_amplitude
+    if not write_altitude:
+        faults["no_altitude"] = True
+    if speckle_sigma > 0:
+        faults["speckle_sigma"] = speckle_sigma
     return SyntheticSurvey(
         path=str(path),
         n_pings=n_pings,
@@ -257,6 +326,7 @@ def write_synthetic_xtf(
         targets=truth,
         background_level=background_level,
         target_level=target_level,
+        faults=faults,
     )
 
 

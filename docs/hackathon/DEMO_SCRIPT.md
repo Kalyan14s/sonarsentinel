@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | v1.0 · 2026-09-13 |
+| **Version** | v1.1 · 2026-09-14 (Sprint 6 values; see the note below §1) |
 | **Owner** | PM (R6) presents; R5 drives the dashboard; R1 & R3 answer technical questions |
 | **Length** | 3-minute core demo (extendable to 6 minutes) |
 
@@ -22,11 +22,13 @@
 | **A6** Full screen recording of the demo (≤ 4 min, captioned) | Backup if the laptop fails | `demo/backup_demo.mp4` + USB + cloud |
 | **A7** Test Summary Report numbers | Answering metric questions | `docs/testing/reports/TSR-M6.md` |
 
+> **Status 2026-09-14:** only **A3** exists (`demo/`). A1/A2 need a NOAA line with a charted wreck, A4–A6 need a rehearsal on the final build. With the CPU baseline detector, the A3 ghost net (8 × 4 m, synthetic) is found only as a **hidden-tier `cylinder`** about 2.6 m from its true position: set the confidence filter to include *hidden* for this segment, or re-record after GPU training. Values marked *not measured yet* must not be spoken as results.
+
 ## 2. Setup checklist (T–30 minutes)
 
 - [ ] Laptop on mains power; sleep and notifications disabled; display scaling 100–125%
 - [ ] `docker compose up -d`; smoke test passed ([Runbook §4](../guides/OPERATIONS_RUNBOOK.md#4-smoke-test-after-install-upgrade-or-restart))
-- [ ] Health shows GPU runtime (or note CPU mode if there is no GPU)
+- [ ] Health shows the expected runtime (`onnxruntime` on the CPU laptop; `cuda` only on a GPU machine)
 - [ ] **Offline basemap** active (don't depend on venue Wi-Fi)
 - [ ] Browser: one window, zoom 110%, bookmarks bar hidden, tabs: Dashboard · Google Earth/QGIS with A5 · slide deck
 - [ ] Clear old demo surveys except A4; set the confidence filter default to 30%
@@ -45,9 +47,9 @@
 | 0:45 | "Here's a detection. It's the charted wreck." | Click the **shipwreck** marker | S-03 detail drawer |
 | 0:55 | "The system shows the sonar evidence, the object outline and its acoustic shadow. That shadow is how we tell a real object from a dark patch." | Toggle overlay **Mask → Shadow** | Chip overlays |
 | 1:10 | "Confidence is 9x%, and here's *why*: the detector, the shadow check, the false-positive filter. Nothing is a black box." | Point at score bars | Why-confidence section |
-| 1:25 | "Its coordinates come from the sonar's navigation. The official chart puts this wreck `<x>` metres away." | Show lat/lon; switch to chart screenshot A2 | Location + chart |
+| 1:25 | "Its coordinates come from the sonar's navigation. The official chart puts this wreck *[median error from `scripts/validate_charted_wreck.py`, not measured yet]* metres away." | Show lat/lon; switch to chart screenshot A2 | Location + chart |
 | 1:45 | "Now ghost nets. No public dataset exists, so we trained on simulated nets. This image contains one, and it's labelled as synthetic." | Upload **A3** with CSV (or open from History) | S-02 with ghost-net marker |
-| 2:10 | "Found: ghost net, `<xx>`%, size about `<x>` × `<x>` metres, with its GPS position." | Click the ghost-net marker | Detail drawer |
+| 2:10 | "Here it is, with its GPS position. The object is 8 × 4 metres." (CPU baseline: shows as a hidden-tier cylinder, so say "our early model flags it for review"; after GPU training say the class and confidence shown) | Click the ghost-net marker | Detail drawer |
 | 2:25 | "Data problems are never hidden. This red segment is missing sonar data, and detections there get lower confidence." | Click warning in status bar | Track warning segment |
 | 2:40 | "One click gives the recovery team a report they can open in Google Earth or a spreadsheet." | Click **KML**; switch to Google Earth tab with A5 | Placemarks on map |
 | 2:55 | "And the same model runs offline on an underwater drone's computer." | Return to slides (edge/performance slide) | Slide 11 |
@@ -58,8 +60,7 @@
 |---|---|---|
 | **Review queue** (1 min) | "Experts confirm or reject in seconds, and every decision becomes training data." | Open Review; press `C`, `R` (reason: Rock) |
 | **Filters** (30 s) | "Focus on what matters: hazards only." | Drag confidence slider to 80; untick classes |
-| **Waterfall** (1 min, P1) | "Analysts can always go back to the raw sonar." | Open in waterfall; scroll; toggle channel |
-| **CLI / edge** (30 s) | "Same engine, headless, for batch or on-board." | Terminal: `sonarsentinel detect demo/line_wreck.xtf --out out/` |
+| **CLI / edge** (30 s) | "Same engine, headless, for batch or on-board." | Terminal: `sonarsentinel detect demo/harbour_synthetic.png --nav demo/harbour_synthetic.csv --out out/`; mention `sonarsentinel watch` for on-board folders |
 
 ## 5. Failure recovery
 
@@ -87,7 +88,7 @@
 
 ## 7. Judge Q&A preparation
 
-Keep answers ≤ 30 seconds. Replace `<>` with measured values before the event.
+Keep answers ≤ 30 seconds. Values below are from the CPU baseline (2026-09-14); update them from TSR-M6 after GPU training.
 
 ### Problem & scope
 1. **Why side-scan sonar and not cameras?**
@@ -99,7 +100,7 @@ Keep answers ≤ 30 seconds. Replace `<>` with measured values before the event.
 
 ### Data & ghost nets
 4. **You have no real ghost-net data. Why should we believe it works?**
-   We don't claim proven field performance. Three layers: synthetic nets rendered with sonar physics (recall `<x>` on a synthetic holdout), an anomaly model that flags anything unlike normal seabed, and a review loop that turns confirmed real nets into training data. Real NIOT or partner samples are our top validation request.
+   We don't claim proven field performance. Three layers: synthetic nets rendered with sonar physics (our CPU baseline was trained before the net generator existed, so its synthetic-holdout recall is 0.00; retraining with synthetic nets is the next step), an anomaly model that flags anything unlike normal seabed, and a review loop that turns confirmed real nets into training data. Real NIOT or partner samples are our top validation request.
 5. **Won't the model just learn your simulator?**
    Synthetic data is capped at 40% of positives, backgrounds are real seabed, generator parameters are varied, and the test set is real-only. Synthetic results are reported separately.
 6. **Where does GPS come from if images don't have it?**
@@ -107,11 +108,11 @@ Keep answers ≤ 30 seconds. Replace `<>` with measured values before the event.
 
 ### Accuracy & reliability
 7. **How accurate are the coordinates?**
-   On NOAA data with charted wrecks, the median error was `<x>` m. Every detection carries an uncertainty estimate from GNSS, heading, layback and timing errors. Towed sonars are typically metre-to-ten-metre class depending on positioning.
+   Charted-wreck validation on NOAA data is prepared but not measured yet. Every detection carries an uncertainty estimate from GNSS, heading, layback and timing errors. Towed sonars are typically metre-to-ten-metre class depending on positioning.
 8. **How do you reduce false positives from rocks and shadows?**
-   A shadow-geometry check (real objects produce a highlight followed by a consistent shadow), shape and texture features in a LightGBM filter, hard-negative training, and calibrated tiers. False positives per km² dropped by `<x>`% compared with the detector alone.
+   A shadow-geometry check (real objects produce a highlight followed by a consistent shadow), shape and texture features in a LightGBM filter, hard-negative training, and calibrated tiers. On validation data the false-positive filter separates true from false detections with AUROC 0.75; the reduction in false positives per km² is not measured yet (it needs contact-free survey lines).
 9. **What does "87% confidence" mean?**
-   It is calibrated on validation data: among detections scored around 87%, roughly 87% were correct. Our calibration error (ECE) is `<x>`. The panel shows which evidence contributed.
+   It is calibrated on validation data: among detections scored around 87%, roughly 87% were correct. Our calibration error (ECE) is 0.048 on a held-out site; with today's early detector most scores are low, and that is what the calibration shows honestly. The panel shows which evidence contributed.
 10. **What about heave, pitch, roll and dropouts?**
     Bottom tracking and GPS-based resampling correct geometry; motion and dropout segments are detected, shown on the map, and reduce confidence. Nothing is silently hidden.
 11. **Different sonars have different resolutions. Does it generalise?**
@@ -121,11 +122,11 @@ Keep answers ≤ 30 seconds. Replace `<>` with measured values before the event.
 12. **Why YOLO instead of Faster R-CNN or U-Net?**
     It provides boxes and masks, runs in real time, and exports cleanly to TensorRT/OpenVINO for edge. We add U-Net-style refinement for thin nets and SAHI for small objects (ADR-002/004).
 13. **Can it really run on an underwater drone?**
-    The detector is about `<x>` MB, and on a Jetson `<model>` we measured `<x>`× real-time with INT8 TensorRT. Heavier steps such as the anomaly model and mosaicing can run on shore.
+    The detector is about 20 MB (39 MB as ONNX) and runs at about 150 ms per tile on a laptop CPU; Jetson and TensorRT are not measured yet. Heavier steps such as the anomaly model and mosaicing can run on shore.
 14. **What if there is no internet on the ship?**
     Everything runs offline, including map tiles; there are no cloud dependencies.
 15. **How long does it take to process a survey?**
-    About `<x>` seconds per 1 km line on a GPU laptop, `<x>` minutes on CPU (targets: 60 s and 5 min).
+    About 4 minutes (240 s) per 1 km of real survey line on a laptop CPU; GPU not measured yet (targets: 60 s on GPU, 5 min on CPU).
 16. **Is the data secure?**
     On-premise by default, no telemetry, restricted-data handling rules, upload validation. Suitable for sensitive seabed data.
 

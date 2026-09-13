@@ -38,7 +38,7 @@ chunking:
 
 detection:
   model: models/detector/yolo11s-seg-sonar-real/0.1.0/best.pt   # CPU baseline (EXP-20260913-baseline)
-  runtime: auto                    # torch | onnxruntime | tensorrt | openvino | auto
+  runtime: auto                    # auto | torch | onnxruntime | cuda | tensorrt (GPU runtimes fall back to CPU with CPU_FALLBACK)
   min_raw_score: 0.20
   sahi: true
   classes: [shipwreck, pipe, cylinder, ghost_net, debris_other]
@@ -73,3 +73,12 @@ report:
   chip_size_px: 256
   mosaic: true                     # GCP mosaic under results/<survey_id>/ when a results folder is given (ST-036)
   mosaic_ground_res_m: 0.25
+
+jobs:
+  max_job_seconds: 3600            # SS_JOB_TIMEOUT_S; a longer job fails with JOB_TIMEOUT (0 disables)
+
+api:                               # overridden by SS_* environment variables (ADR-019)
+  keep_work_files: false           # SS_KEEP_WORK_FILES
+  log_level: INFO                  # SS_LOG_LEVEL
+  workers: 1                       # SS_WORKERS (only 1 is supported)
+  # offline_tiles: tiles/basemap.mbtiles   # SS_OFFLINE_TILES

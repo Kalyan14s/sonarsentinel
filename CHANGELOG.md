@@ -9,6 +9,27 @@ Categories: **Added** · **Changed** · **Deprecated** · **Removed** · **Fixed
 
 *(Phase 2 merged to `main` in `8d13648`, Phase 3 in `4237954`. Sprint 3 / Phase 4 on `main`.)*
 
+### Added (Sprint 6)
+- Deployment (ST-005): CPU Docker images for backend (`python:3.11-slim`, pinned `requirements-docker.txt`) and frontend (nginx), Compose files for shore, GPU override and edge, `.dockerignore`; CI builds both images, runs a health smoke test and a Trivy scan that fails on critical findings
+- Edge watch mode (ST-103): `sonarsentinel watch DIR --out OUT` processes each stable file once, keeps state across restarts and writes `SS1|…` alert lines (≤ 256 bytes) to stdout and `alerts.log`
+- Configuration and jobs (ADR-019): all `SS_*` environment variables applied and validated at startup; job timeout (`SS_JOB_TIMEOUT_S`, `JOB_TIMEOUT`); `SS_KEEP_WORK_FILES`; health reports detector runtime and offline tiles
+- Pipeline hardening: chunk retry once, then skip with a ranged `CHUNK_SKIPPED` warning; `cuda`/`tensorrt` runtimes fall back to CPU with `CPU_FALLBACK`
+- API: survey history filters (`q`, `project`, `status`, `from`, `to`), `DELETE /surveys/{id}` (keeps review labels; 409 while running), `GET/PUT /settings` applied to new jobs, MBTiles tiles endpoint `/api/v1/tiles/{z}/{x}/{y}.png`
+- Dashboard: review queue S-05 with keyboard decisions and undo (ST-096), history and settings screens (ST-098), offline basemap switch and badge (ST-099); 69 Vitest tests
+- Validation tooling: `scripts/robustness_suite.py` (ST-111), `scripts/benchmark.py` (ST-112), `scripts/validate_charted_wreck.py` (ST-037); fault options in the synthetic XTF generator; `scripts/third_party_notices.py` and `THIRD_PARTY_NOTICES.md`
+- Security tests TC-SEC-001…003 (`test_security.py`); CI `security` job with `pip-audit` and `npm audit --audit-level=critical`
+- Reports: [TSR-M6](docs/testing/reports/TSR-M6.md), robustness, benchmark and dependency-scan reports; final project report draft; Sprint 6 plan; ADR-019
+
+### Changed (Sprint 6)
+- Frontend upgrades: vite 8, vitest 5, @vitejs/plugin-react 6, react-router-dom 7 (clears the npm advisories)
+- User Manual, Operations Runbook and Developer Setup verified against the implementation (ST-114); deck and demo script use measured values or say *not measured yet* (ST-115)
+- `pipeline.yaml` gains `jobs` and `api` blocks; `detection.runtime` lists `cuda` and `tensorrt` instead of `openvino`
+
+### Fixed (Sprint 6)
+- A GPS gap across a chunk border collapsed pings and lost targets: missing positions are interpolated over the whole line before chunking
+- Zeroed pings saturated gain normalisation: masked rows are excluded from gain statistics
+- `DROPOUT` flag and penalty now also cover detections next to a masked gap
+
 ### Added (Sprint 5)
 - WebSocket `/ws/jobs/{job_id}` (ST-083): resume after `seq`, ping/pong, replay from memory or `job.log.jsonl`, live tail without duplicates, close 1000 after `done`/`error` and 4404 for unknown jobs; `done` now comes from the job manager after results are stored, with `report_urls` and `mosaic`
 - Results API (ST-084): `GET /surveys`, `/surveys/{id}`, `/surveys/{id}/detections` (class, confidence range, tier, review status, flags, bbox, sort, paging), `/surveys/{id}/track` (track + quality segments), `/surveys/{id}/report` (JSON/CSV/GeoJSON/KML with `all|filtered|hazards|confirmed` scopes), `/surveys/{id}/mosaic.png`, `/detections/{id}`, `/detections/{id}/chip.png`; one shared filter module for the API, mock and exports

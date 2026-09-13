@@ -1,4 +1,4 @@
-"""Runtime state of the real API app: data folder, database and job worker.
+"""Runtime state of the real API app: data folder, database, job worker and offline tiles.
 
 The context opens lazily (or at app start-up through the lifespan), so importing
 ``sonarsentinel.api.main`` has no side effects on disk.
@@ -27,6 +27,7 @@ class ApiContext:
     data_dir: Path
     database: Database
     jobs: JobManager
+    offline_tiles: Path | None = None
     id_lock: threading.Lock = field(default_factory=threading.Lock)
 
     @property
@@ -38,7 +39,9 @@ class ApiContext:
         self.database.dispose()
 
 
-def open_context(config: dict[str, Any], data_dir: str | Path) -> ApiContext:
+def open_context(
+    config: dict[str, Any], data_dir: str | Path, offline_tiles: Path | None = None
+) -> ApiContext:
     """Open the database, fail jobs left over from a stopped server and start the worker."""
     root = Path(data_dir)
     root.mkdir(parents=True, exist_ok=True)
@@ -46,7 +49,9 @@ def open_context(config: dict[str, Any], data_dir: str | Path) -> ApiContext:
     jobs = JobManager(database, config, root)
     jobs.recover()
     jobs.start()
-    return ApiContext(config=config, data_dir=root, database=database, jobs=jobs)
+    return ApiContext(
+        config=config, data_dir=root, database=database, jobs=jobs, offline_tiles=offline_tiles
+    )
 
 
 def get_context(app: FastAPI) -> ApiContext:
@@ -55,7 +60,11 @@ def get_context(app: FastAPI) -> ApiContext:
         with _INIT_LOCK:
             context = getattr(app.state, "context", None)
             if context is None:
-                context = open_context(app.state.config, app.state.data_dir)
+                context = open_context(
+                    app.state.config,
+                    app.state.data_dir,
+                    getattr(app.state, "offline_tiles", None),
+                )
                 app.state.context = context
     return context
 

@@ -127,10 +127,10 @@ Full list: [Literature Review](../research/LITERATURE_REVIEW.md#references).
 | 5 | **Architecture** | Container diagram ([01-system-architecture](../architecture/01-system-architecture.md)) simplified; offline/edge callouts | 0:40 |
 | 6 | **How we beat sonar noise** | Before/after panels: raw → despeckled → slant-corrected → dropouts masked | 0:40 |
 | 7 | **Finding ghost nets without ghost-net data** | Synthetic net examples + anomaly heatmap + review loop diagram | 0:50 |
-| 8 | **Trustworthy confidence** | Shadow check illustration; reliability diagram `<ECE>`; FP/km² before vs. after `<values>` | 0:50 |
-| 9 | **Exact locations** | Pixel → GPS diagram; charted-wreck validation: `<median error> m`; KML in Google Earth | 0:40 |
+| 8 | **Trustworthy confidence** | Shadow check illustration; reliability diagram, ECE 0.048 (95% CI 0.027–0.080, CPU baseline, calib site); FP filter AUROC 0.747 vs. detector score (validation); FP/km² before vs. after: *not measured yet* (needs contact-free lines TD-11) | 0:50 |
+| 9 | **Exact locations** | Pixel → GPS diagram; charted-wreck validation: *not measured yet* (ST-037 tooling ready, needs a NOAA line with a charted wreck); per-detection uncertainty; KML in Google Earth | 0:40 |
 | 10 | **LIVE DEMO** | Switch to dashboard ([Demo Script](DEMO_SCRIPT.md)) | 3:00 |
-| 11 | **Results & performance** | Metrics table: mAP@50 `<>` · ghost-net recall (synthetic) `<>` · ECE `<>` · geo error `<>` · 1 km in `<>` s (GPU) / `<>` (CPU) / `<>`× real time (Jetson) | 0:40 |
+| 11 | **Results & performance** | Metrics table (CPU baseline, label every row with its data): mAP@50 box 0.283 (validation, 28 cylinders; target ≥ 0.70) · ghost-net recall (synthetic holdout) 0.00 (no ghost-net training data yet) · ECE 0.048 · geo error *not measured yet* · 1 km in ≈ 240 s on CPU (0.444 km real USGS line, i5-13420H, ONNX Runtime; target ≤ 300 s) · GPU and Jetson *not measured yet* | 0:40 |
 | 12 | **Impact, roadmap & ask** | SDG 14 + disaster management; roadmap (real NIOT data, AUV adaptive missions, change detection); ask: sample NIOT logs & ghost-net ground truth for validation | 0:40 |
 
 ### Visual guidelines
@@ -149,6 +149,6 @@ Full list: [Literature Review](../research/LITERATURE_REVIEW.md#references).
 ### Honesty rules for claims
 | Say | Don't say |
 |---|---|
-| "Ghost-net recall of `<x>` on a synthetic holdout; real-world validation needs NIOT data" | "Detects 95% of ghost nets" (unmeasured) |
-| "Target: ≥ 70% analyst time saving; measured `<x>` in our user test" | "Saves 90% of time" (unmeasured) |
-| "Median error `<x>` m against charted wrecks on NOAA data" | "GPS-accurate to centimetres" |
+| "Our CPU baseline has ghost-net recall of 0.00 on a synthetic holdout because it has no ghost-net training data yet; real-world validation needs NIOT data" (update after GPU training) | "Detects 95% of ghost nets" (unmeasured) |
+| "Target: ≥ 70% analyst time saving; our user test is still to be run" (replace with the measured value once TC-USE is done) | "Saves 90% of time" (unmeasured) |
+| "Every detection carries a position uncertainty; charted-wreck validation is in progress" (replace with the median error from `scripts/validate_charted_wreck.py`) | "GPS-accurate to centimetres" |

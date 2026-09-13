@@ -263,10 +263,98 @@ export function surveyForm(files: File[], navCsv?: File | null, options?: Survey
   return form;
 }
 
+/** `GET /surveys` row (ADR-019): the survey summary plus history columns. */
+export interface SurveyListItem extends SurveySummary {
+  project?: string | null;
+  status?: string;
+  warning_count?: number;
+  size_bytes?: number | null;
+  error_code?: string | null;
+}
+
+/** `GET /surveys` query (S-07 history filters). */
+export interface SurveyListQuery {
+  q?: string;
+  project?: string;
+  status?: string[];
+  from?: string;
+  to?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export function surveyListQueryString(query: SurveyListQuery): string {
+  const params = new URLSearchParams();
+  if (query.q?.trim()) params.set('q', query.q.trim());
+  if (query.project) params.set('project', query.project);
+  if (query.status?.length) params.set('status', query.status.join(','));
+  if (query.from) params.set('from', query.from);
+  if (query.to) params.set('to', query.to);
+  if (query.limit !== undefined) params.set('limit', String(query.limit));
+  if (query.offset !== undefined) params.set('offset', String(query.offset));
+  const text = params.toString();
+  return text ? `?${text}` : '';
+}
+
+export type Basemap = 'online' | 'offline';
+export type CoordinateFormat = 'dd' | 'dms';
+
+/** Editable part of `GET/PUT /settings` (S-07, ADR-019). */
+export interface EditableSettings {
+  detection: { model_id: string; runtime: string; min_raw_score: number };
+  anomaly: { enabled: boolean; threshold: number };
+  tiers: { hazard: number; review: number; anomaly: number };
+  map: { min_conf_default: number; basemap: Basemap; coordinates: CoordinateFormat };
+  processing: { ground_resolution_m: number; pings_per_chunk: number; overlap_pings: number };
+  geo: { apply_layback: string; cluster_radius_m: number };
+}
+
+export interface SystemSettings {
+  data_dir: string;
+  max_upload_gb: number;
+  keep_work_files: boolean;
+  offline_tiles_available: boolean;
+  runtimes_available: string[];
+  version: string;
+}
+
+export interface Settings extends EditableSettings {
+  system: SystemSettings;
+}
+
+export interface HealthInfo {
+  status: string;
+  version: string;
+  runtime: string;
+  offline_tiles?: boolean;
+}
+
+async function requestNoContent(path: string, init?: RequestInit): Promise<void> {
+  const response = await fetch(`${API}${path}`, init);
+  if (!response.ok) {
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      body = undefined;
+    }
+    throw apiErrorFrom(response.status, body, response.statusText);
+  }
+}
+
 export const api = {
-  health: () => request<{ status: string; version: string; runtime: string }>('/health'),
+  health: () => request<HealthInfo>('/health'),
   models: () => request<Paged<ModelInfo>>('/models'),
-  surveys: () => request<Paged<SurveySummary>>('/surveys'),
+  surveys: (query: SurveyListQuery = {}) =>
+    request<Paged<SurveyListItem>>(`/surveys${surveyListQueryString(query)}`),
+  deleteSurvey: (id: string) => requestNoContent(`/surveys/${enc(id)}`, { method: 'DELETE' }),
+  settings: () => request<Settings>('/settings'),
+  saveSettings: (body: Partial<EditableSettings>) =>
+    request<Settings>('/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
   survey: (id: string) => request<SurveySummary>(`/surveys/${enc(id)}`),
   track: (id: string) => request<TrackGeoJson>(`/surveys/${enc(id)}/track`),
   detections: (id: string, query: DetectionQuery = {}) =>

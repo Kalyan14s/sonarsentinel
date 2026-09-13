@@ -84,6 +84,21 @@ class ProcessedChunk:
         )
 
 
+def _fill_masked_rows(
+    side: npt.NDArray[Any] | None, masked: npt.NDArray[np.bool_]
+) -> npt.NDArray[Any] | None:
+    """Masked (long) dropout rows replaced by the median valid row.
+
+    Zeroed pings would otherwise pull down the along-track gain and the clip percentiles and
+    saturate the whole chunk (TC-ROB-001); the rows are zeroed again after gain.
+    """
+    if side is None or not masked.any() or masked.all():
+        return side
+    out = np.array(side, copy=True)
+    out[masked] = np.median(side[~masked], axis=0).astype(side.dtype)
+    return out
+
+
 def _add(warnings: list[str], codes: list[str] | str) -> None:
     for code in [codes] if isinstance(codes, str) else codes:
         if code not in warnings:
@@ -121,6 +136,8 @@ def preprocess_chunk(
     repaired = repair_dropouts(
         log.port, log.starboard, dropout, max_gap=pre["dropout"]["max_inpaint_gap_pings"]
     )
+    port = _fill_masked_rows(repaired.port, repaired.masked)
+    starboard = _fill_masked_rows(repaired.starboard, repaired.masked)
 
     slant = nav["slant_range_m"].to_numpy(np.float64)
     has_geometry = np.isfinite(slant).any() and not log.ground_range_corrected
@@ -129,8 +146,8 @@ def preprocess_chunk(
         slant = np.where(np.isfinite(slant), slant, np.nanmedian(slant))
         bt = pre["bottom_tracking"]
         track = track_bottom(
-            repaired.port,
-            repaired.starboard,
+            port,
+            starboard,
             slant,
             threshold_k=bt["threshold_k"],
             median_window=bt["median_window"],
@@ -140,12 +157,15 @@ def preprocess_chunk(
             _add(warnings, NO_ALTITUDE_BOTTOM_TRACKED)
 
     gain = normalize_gain(
-        repaired.port,
-        repaired.starboard,
+        port,
+        starboard,
         along_track_window_pings=pre["gain"]["along_track_window_pings"],
         per_side=pre["gain"]["per_side"],
         clip_percentiles=pre["gain"]["clip_percentiles"],
     )
+    for side in (gain.port, gain.starboard):
+        if side is not None:
+            side[repaired.masked] = 0
 
     if has_geometry:
         n_ground = ground_bins(slant, altitude, res) + 1

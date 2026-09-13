@@ -1,0 +1,21 @@
+# Build context for docker/Dockerfile.backend and docker/Dockerfile.frontend (repository root).
+.git
+.github
+.claude
+**/node_modules
+frontend/dist
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/*.egg-info
+**/.venv
+data
+models
+runs
+tiles
+demo
+docs
+ml
+acquisition
+*.log

@@ -8,6 +8,7 @@ export is built from the stored detections, so review changes appear in all down
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +25,7 @@ from sonarsentinel.api.filters import (
     select_scope,
     summarize,
 )
+from sonarsentinel.api.history import parse_survey_filters
 from sonarsentinel.api.review import (
     apply_review,
     label_record,
@@ -31,7 +33,7 @@ from sonarsentinel.api.review import (
     remove_labels,
     write_label,
 )
-from sonarsentinel.errors import NotFoundError, ValidationError
+from sonarsentinel.errors import JobNotCancellableError, NotFoundError, ValidationError
 from sonarsentinel.jobs.manager import report_url
 from sonarsentinel.report.builder import now_utc
 from sonarsentinel.report.chips import OVERLAYS, chip_filename
@@ -58,6 +60,7 @@ class NotGeotaggedError(ValidationError):
 
 def _survey_summary(session: Session, survey: Survey) -> dict[str, Any]:
     job = repo.job_for_survey(session, survey.survey_id)
+    warnings = json.loads(job.warnings_json or "[]") if job is not None else []
     return {
         "survey_id": survey.survey_id,
         "name": survey.name,
@@ -74,6 +77,8 @@ def _survey_summary(session: Session, survey: Survey) -> dict[str, Any]:
         },
         "bbox": repo.parse_bbox_wkt(survey.bbox_wkt),
         "track_length_km": survey.track_length_km,
+        "warning_count": len(warnings),
+        "size_bytes": repo.survey_size_bytes(session, survey.survey_id),
         "summary": repo.detection_counts(session, survey.survey_id),
     }
 
@@ -91,16 +96,58 @@ def _report_urls(session: Session, survey: Survey) -> dict[str, str]:
     }
 
 
-@router.get("/surveys", tags=["surveys"], summary="Surveys, newest first")
+@router.get("/surveys", tags=["surveys"], summary="Surveys, newest first, with search and filters")
 def list_surveys(
     request: Request,
+    q: str | None = None,
+    project: str | None = None,
+    status: str | None = None,
+    date_from: str | None = Query(None, alias="from"),
+    date_to: str | None = Query(None, alias="to"),
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ) -> dict[str, Any]:
+    filters = parse_survey_filters(
+        q=q, project=project, status=status, date_from=date_from, date_to=date_to
+    )
     context = get_context(request.app)
     with context.database.session() as session:
-        total, rows = repo.list_surveys(session, limit=limit, offset=offset)
+        total, rows = repo.list_surveys(
+            session,
+            limit=limit,
+            offset=offset,
+            q=filters.q,
+            project=filters.project,
+            statuses=filters.statuses,
+            created_from=filters.created_from,
+            created_before=filters.created_before,
+        )
         return {"total": total, "items": [_survey_summary(session, s) for s in rows]}
+
+
+@router.delete(
+    "/surveys/{survey_id}",
+    status_code=204,
+    tags=["surveys"],
+    summary="Delete a finished survey with its results and uploads (labels are kept)",
+    response_class=Response,
+)
+def delete_survey(survey_id: str, request: Request) -> Response:
+    context = get_context(request.app)
+    with context.database.session() as session, session.begin():
+        repo.require_survey(session, survey_id)
+        job = repo.job_for_survey(session, survey_id)
+        if job is not None and job.status not in repo.FINISHED_STATUSES:
+            raise JobNotCancellableError(
+                "Cancel the job first",
+                survey_id=survey_id,
+                job_id=job.job_id,
+                status=job.status,
+            )
+        repo.delete_survey(session, survey_id)
+    for folder in ("results", "uploads", "work"):
+        shutil.rmtree(context.data_dir / folder / survey_id, ignore_errors=True)
+    return Response(status_code=204)
 
 
 @router.get("/surveys/{survey_id}", tags=["surveys"], summary="Survey metadata and report links")

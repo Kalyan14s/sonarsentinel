@@ -1,0 +1,49 @@
+# Shore workstation (07-deployment §3, ST-005). From the repository root:
+#   docker compose -f docker/docker-compose.yml up -d --build
+# Dashboard: http://localhost:8080   API docs: http://localhost:8000/docs
+# GPU: add -f docker/docker-compose.gpu.yml
+name: sonarsentinel
+
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    image: sonarsentinel/backend:1.0.0-rc1
+    ports:
+      # Localhost only by default (TC-SEC-005); use "8000:8000" to expose on the LAN.
+      - "127.0.0.1:8000:8000"
+    environment:
+      SS_CONFIG: /app/configs/pipeline.yaml
+      SS_DATA_DIR: /data
+      SONARSENTINEL_DATA_DIR: /data
+      SS_MODELS_DIR: /models
+      SS_RUNTIME: auto
+      SS_MAX_UPLOAD_GB: "2"
+      SS_WORKERS: "1"
+      SS_OFFLINE_TILES: /tiles/basemap.mbtiles
+      SS_KEEP_WORK_FILES: "false"
+      SS_LOG_LEVEL: INFO
+    volumes:
+      - ../data/api:/data # uploads, results, labels, SQLite database
+      - ../models:/models:ro # model registry (best.pt / best.onnx, PatchCore, FP filter, calibrator)
+      - ../tiles:/tiles:ro # offline basemap (ST-099)
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    image: sonarsentinel/frontend:1.0.0-rc1
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped

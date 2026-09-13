@@ -32,6 +32,7 @@ from sonarsentinel.api.filters import (
     summarize,
 )
 from sonarsentinel.api.handlers import install_handlers
+from sonarsentinel.api.history import parse_survey_filters, survey_matches
 from sonarsentinel.api.review import apply_review, parse_review
 from sonarsentinel.api.ws import (
     CLOSE_NORMAL,
@@ -41,6 +42,7 @@ from sonarsentinel.api.ws import (
     pong,
     resume_after,
 )
+from sonarsentinel.config import load_config
 from sonarsentinel.errors import JobNotCancellableError, NotFoundError, ValidationError
 from sonarsentinel.report.builder import now_utc
 from sonarsentinel.report.chips import OVERLAYS
@@ -53,6 +55,7 @@ from sonarsentinel.report.export import (
     track_coords,
     track_feature_collection,
 )
+from sonarsentinel.settings import default_settings, merge_update, validate_settings
 
 API = "/api/v1"
 
@@ -103,6 +106,8 @@ class MockState:
             for e in self.events
             if e["type"] == "warning"
         ]
+        self.deleted = False
+        self.settings: dict[str, Any] = default_settings(load_config())
 
     def report_urls(self) -> dict[str, str]:
         geotagged = report_is_geotagged(self.report)
@@ -130,6 +135,8 @@ class MockState:
             },
             "bbox": survey["bbox"],
             "track_length_km": survey["track_length_km"],
+            "warning_count": len(self.quality),
+            "size_bytes": 0,
             "summary": summarize(self.detections.values()),
         }
 
@@ -150,7 +157,7 @@ def create_mock_app(event_delay_s: float = 0.05) -> FastAPI:
     install_handlers(app)
 
     def survey_or_404(survey_id: str) -> None:
-        if survey_id != state.survey_id:
+        if survey_id != state.survey_id or state.deleted:
             raise NotFoundError(f"Survey {survey_id} not found", survey_id=survey_id)
 
     def detection_or_404(detection_id: str) -> dict[str, Any]:
@@ -207,9 +214,56 @@ def create_mock_app(event_delay_s: float = 0.05) -> FastAPI:
 
     @r.get("/surveys")
     def surveys(
-        limit: int = Query(50, ge=1, le=500), offset: int = Query(0, ge=0)
+        q: str | None = None,
+        project: str | None = None,
+        status: str | None = None,
+        date_from: str | None = Query(None, alias="from"),
+        date_to: str | None = Query(None, alias="to"),
+        limit: int = Query(50, ge=1, le=500),
+        offset: int = Query(0, ge=0),
     ) -> dict[str, Any]:
-        return {"total": 1, "items": [state.survey_summary()][offset : offset + limit]}
+        filters = parse_survey_filters(
+            q=q, project=project, status=status, date_from=date_from, date_to=date_to
+        )
+        summaries = [] if state.deleted else [state.survey_summary()]
+        items = [s for s in summaries if survey_matches(s, filters)]
+        return {"total": len(items), "items": items[offset : offset + limit]}
+
+    @r.delete("/surveys/{survey_id}", status_code=204, response_class=Response)
+    def delete_survey(survey_id: str) -> Response:
+        survey_or_404(survey_id)
+        state.deleted = True
+        return Response(status_code=204)
+
+    def mock_system() -> dict[str, Any]:
+        return {
+            "data_dir": "mock",
+            "max_upload_gb": 2.0,
+            "keep_work_files": False,
+            "offline_tiles_available": False,
+            "runtimes_available": ["auto"],
+            "version": __version__,
+        }
+
+    @r.get("/settings")
+    def get_settings() -> dict[str, Any]:
+        return state.settings | {"system": mock_system()}
+
+    @r.put("/settings")
+    async def put_settings(request: Request) -> dict[str, Any]:
+        try:
+            body = await request.json()
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise ValidationError("Send the settings as a JSON object", field="body") from exc
+        detector = state.report["processing"]["models"]["detector"]
+        state.settings = validate_settings(
+            merge_update(state.settings, body), model_ids=[detector], tiles_available=False
+        )
+        return state.settings | {"system": mock_system()}
+
+    @r.get("/tiles/{z}/{x}/{y}.png")
+    def tile(z: int, x: int, y: int) -> Response:
+        raise NotFoundError("The mock has no offline tiles", z=z, x=x, y=y)
 
     @r.get("/surveys/{survey_id}")
     def survey(survey_id: str) -> dict[str, Any]:

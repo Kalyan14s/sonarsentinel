@@ -1,0 +1,38 @@
+# Edge runner (07-deployment §4, ST-103): process sonar files as they appear.
+#   ACQUISITION_DIR=/mnt/sonar docker compose -f docker/docker-compose.edge.yml up -d --build
+# Results, chips, the watch state and alerts.log go to ../data/edge/results.
+# Jetson builds need an L4T/JetPack base image and the TensorRT runtime (ST-101, not built here).
+name: sonarsentinel-edge
+
+services:
+  edge:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    image: sonarsentinel/backend:1.0.0-rc1
+    command:
+      - sonarsentinel
+      - watch
+      - /acquisition
+      - --out
+      - /data/results
+      - --runtime
+      - auto
+      - --no-mosaic
+      - --alerts-min-conf
+      - "80"
+      - --interval
+      - "5"
+      - --stable-seconds
+      - "10"
+    environment:
+      SS_CONFIG: /app/configs/pipeline.yaml
+      SS_MODELS_DIR: /models
+      SONARSENTINEL_DATA_DIR: /data
+    volumes:
+      - ${ACQUISITION_DIR:-../acquisition}:/acquisition:ro
+      - ../data/edge:/data
+      - ../models:/models:ro
+    healthcheck:
+      disable: true
+    restart: unless-stopped

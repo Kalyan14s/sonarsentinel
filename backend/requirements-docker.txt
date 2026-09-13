@@ -1,0 +1,26 @@
+# Pinned runtime stack for docker/Dockerfile.backend (Linux, CPU by default).
+# Versions match the stack verified on 2026-09-14 (see docs/guides/DEVELOPER_SETUP.md §3.2).
+# PyTorch is installed first by the Dockerfile from the index in TORCH_INDEX (CPU wheels by
+# default), so torch/torchvision are not listed here.
+numpy==2.4.6
+scipy==1.17.1
+pandas==3.0.5
+pyproj==3.7.2
+rasterio==1.4.4
+shapely==2.1.2
+opencv-python-headless==5.0.0.93
+pyxtf==1.5.0
+typer==0.27.2
+PyYAML==6.0.3
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+SQLAlchemy==2.0.52
+pydantic-settings==2.15.0
+python-multipart==0.0.32
+ultralytics==8.4.150
+sahi==0.12.6
+onnx==1.22.0
+onnxslim==0.1.96
+onnxruntime==1.30.0
+lightgbm==4.7.0
+scikit-learn==1.9.1

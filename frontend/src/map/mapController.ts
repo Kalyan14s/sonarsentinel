@@ -66,9 +66,13 @@ export function createMapController(
 ): MapController {
   const animate = !options.reducedMotion;
   const map = L.map(element).setView([13.08, 80.3], 13);
-  L.tileLayer(options.tileUrl ?? DEFAULT_TILES, {
+  const tiles = options.tileUrl ?? DEFAULT_TILES;
+  L.tileLayer(tiles, {
     maxZoom: 20,
-    attribution: '&copy; OpenStreetMap contributors',
+    // Local tiles (ST-099) are self-rendered OSM data; keep the attribution either way.
+    attribution: tiles.startsWith('/')
+      ? '&copy; OpenStreetMap contributors (offline)'
+      : '&copy; OpenStreetMap contributors',
   }).addTo(map);
 
   const track = L.polyline([], { className: 'ss-track', weight: 3 }).addTo(map);

@@ -192,7 +192,9 @@ def detect(
     out: Annotated[Path, typer.Option(help="Output folder (a subfolder per survey).")] = Path(
         "results"
     ),
-    formats: Annotated[str, typer.Option(help="Comma-separated: json,csv.")] = "json,csv",
+    formats: Annotated[
+        str, typer.Option(help="Comma-separated: json,csv,geojson,kml.")
+    ] = "json,csv",
     nav: NavOption = None,
     utm_epsg: EpsgOption = "auto",
     min_conf: Annotated[
@@ -254,3 +256,79 @@ def serve(
 
     target = "sonarsentinel.api.mock:app" if mock else "sonarsentinel.api.main:app"
     uvicorn.run(target, host=host, port=port)
+
+
+WATCH_RUNTIMES = {
+    "auto": "auto",
+    "torch": "torch",
+    "cuda": "cuda",
+    "onnxruntime": "onnxruntime",
+    "tensorrt": "tensorrt",
+}
+
+
+@app.command()
+def watch(
+    folder: Annotated[
+        Path, typer.Argument(exists=True, file_okay=False, help="Acquisition folder to watch.")
+    ],
+    out: Annotated[
+        Path, typer.Option(help="Results folder: reports, chips, watch state, alerts.log.")
+    ] = Path("results"),
+    interval: Annotated[float, typer.Option(help="Seconds between scans.")] = 5.0,
+    stable_seconds: Annotated[
+        float,
+        typer.Option("--stable-seconds", help="A file is closed after this long unchanged."),
+    ] = 10.0,
+    once: Annotated[bool, typer.Option("--once", help="Scan once and exit.")] = False,
+    formats: Annotated[str, typer.Option(help="Comma-separated: json,csv,geojson,kml.")] = (
+        "json,csv"
+    ),
+    runtime: Annotated[
+        str, typer.Option(help="Detector runtime: auto, torch, cuda, onnxruntime or tensorrt.")
+    ] = "auto",
+    no_anomaly: Annotated[
+        bool, typer.Option("--no-anomaly", help="Skip the PatchCore anomaly model.")
+    ] = False,
+    no_mosaic: Annotated[bool, typer.Option("--no-mosaic", help="Don't build mosaics.")] = False,
+    alerts_min_conf: Annotated[
+        float,
+        typer.Option("--alerts-min-conf", help="Print an SS1 alert line at this confidence."),
+    ] = 80.0,
+    detector: Annotated[
+        str, typer.Option(help="auto (trained YOLO if available), classical or yolo.")
+    ] = "auto",
+    config: Annotated[Path | None, typer.Option(help="Pipeline YAML.")] = None,
+) -> None:
+    """Process sonar files as they appear in a folder (edge mode, ST-103)."""
+    from sonarsentinel.edge.watch import make_processor
+    from sonarsentinel.edge.watch import watch as run_watch
+
+    if runtime not in WATCH_RUNTIMES:
+        raise typer.BadParameter(f"Unknown runtime {runtime!r}", param_hint="--runtime")
+    try:
+        cfg = load_config(config)
+        cfg.setdefault("detection", {})["runtime"] = WATCH_RUNTIMES[runtime]
+        if no_mosaic:
+            cfg.setdefault("report", {})["mosaic"] = False
+        process = make_processor(
+            cfg, build_detector(detector, None, cfg), build_anomaly(cfg, no_anomaly), out
+        )
+    except SonarSentinelError as exc:
+        typer.echo(json.dumps(exc.to_dict()), err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"Watching {folder} -> {out} (Ctrl+C to stop)", err=True)
+    try:
+        run_watch(
+            folder,
+            out,
+            process=process,
+            interval=interval,
+            once=once,
+            formats=[f.strip() for f in formats.split(",") if f.strip()],
+            stable_seconds=stable_seconds,
+            alerts_min_conf=alerts_min_conf,
+            echo=typer.echo,
+        )
+    except KeyboardInterrupt:
+        typer.echo("Stopped.", err=True)

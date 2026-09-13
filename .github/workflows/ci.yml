@@ -95,3 +95,114 @@ jobs:
         run: |
           pip install -e ".[dev,geo]"
           pytest -q
+
+  security:
+    name: Dependency audit (pip-audit, npm audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend (dev, geo, api) and pip-audit
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip setuptools
+          pip install -e ".[dev,geo,api]" pip-audit
+      # TC-SEC-004: fail on any known vulnerability. There are no ignores today; add
+      # `--ignore-vuln <ID>` only for advisories without a fixed release, with the reason here.
+      - name: pip-audit
+        run: pip-audit --progress-spinner off --skip-editable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: npm audit (critical)
+        working-directory: frontend
+        run: npm ci && npm audit --audit-level=critical
+
+  docker:
+    name: Docker images (build, smoke test, scan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.backend
+          tags: sonarsentinel/backend:ci
+          load: true
+          push: false
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.frontend
+          tags: sonarsentinel/frontend:ci
+          load: true
+          push: false
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+      - name: Smoke test backend (health, CLI, non-root)
+        run: |
+          docker run -d --name ss-backend -p 127.0.0.1:8000:8000 sonarsentinel/backend:ci
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8000/api/v1/health; then echo; break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8000/api/v1/health
+          docker exec ss-backend sonarsentinel --help
+          test "$(docker exec ss-backend id -u)" = "1000"
+      - name: Backend logs
+        if: always()
+        run: docker logs ss-backend || true
+      - name: Smoke test frontend (nginx config)
+        run: docker run --rm sonarsentinel/frontend:ci nginx -t
+      # TC-SEC-004 image scan: report CRITICAL and HIGH with a fix available; fail on CRITICAL only
+      # (HIGH findings in the Debian/Alpine base images are reviewed from the uploaded reports).
+      - name: Trivy report (backend)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: sonarsentinel/backend:ci
+          format: table
+          output: trivy-backend.txt
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "0"
+      - name: Trivy report (frontend)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: sonarsentinel/frontend:ci
+          format: table
+          output: trivy-frontend.txt
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "0"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-reports
+          path: trivy-*.txt
+      - name: Trivy gate (backend, critical)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: sonarsentinel/backend:ci
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Trivy gate (frontend, critical)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: sonarsentinel/frontend:ci
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"

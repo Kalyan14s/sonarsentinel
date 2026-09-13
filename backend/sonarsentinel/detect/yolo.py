@@ -45,20 +45,55 @@ def polygon_mask(
     return mask.astype(bool)
 
 
-RUNTIMES = ("auto", "torch", "onnxruntime")
+RUNTIMES = ("auto", "torch", "onnxruntime", "cuda", "tensorrt")
+ACCELERATED_RUNTIMES = ("cuda", "tensorrt")
+CPU_FALLBACK = "CPU_FALLBACK"
 
 
-def resolve_runtime_weights(weights: Path, runtime: str, *, onnxruntime_available: bool) -> Path:
-    """Weights file for ``detection.runtime`` (ADR-018 §10).
+def accelerator_available() -> bool:
+    """True when PyTorch sees a CUDA device (TensorRT engines are built on the device, ST-101)."""
+    import importlib.util
+
+    if importlib.util.find_spec("torch") is None:
+        return False
+    import torch
+
+    return bool(torch.cuda.is_available())
+
+
+def runtime_fallback_warnings(requested: str, actual: str, model_version: str = "") -> list[str]:
+    """``[CPU_FALLBACK]`` when a GPU runtime was requested but the detector runs on the CPU.
+
+    Rule-based detectors have no runtime choice, so they never report a fallback (ADR-019).
+    """
+    if model_version.startswith("classical-") or requested not in ACCELERATED_RUNTIMES:
+        return []
+    return [] if actual.startswith(ACCELERATED_RUNTIMES) else [CPU_FALLBACK]
+
+
+def resolve_runtime_weights(
+    weights: Path,
+    runtime: str,
+    *,
+    onnxruntime_available: bool,
+    accelerator: bool = False,
+) -> Path:
+    """Weights file for ``detection.runtime`` (ADR-018 §10, ADR-019).
 
     ``auto`` uses ``<weights>.onnx`` next to the configured file when it exists and ONNX Runtime is
     installed, otherwise the configured file; ``torch`` uses the ``.pt`` file; ``onnxruntime``
-    requires the ``.onnx`` file.
+    requires the ``.onnx`` file. ``cuda``/``tensorrt`` use the PyTorch weights on the GPU when
+    ``accelerator`` is true and otherwise fall back like ``auto`` (the pipeline then reports
+    ``CPU_FALLBACK``).
     """
     if runtime not in RUNTIMES:
         from sonarsentinel.errors import ValidationError
 
         raise ValidationError(f"Unknown detection runtime: {runtime}", supported=list(RUNTIMES))
+    if runtime in ACCELERATED_RUNTIMES:
+        if accelerator:
+            return weights.with_suffix(".pt") if weights.suffix == ".onnx" else weights
+        runtime = "auto"
     onnx = weights.with_suffix(".onnx")
     if runtime == "torch":
         return weights.with_suffix(".pt") if weights.suffix == ".onnx" else weights

@@ -1,0 +1,51 @@
+# syntax=docker/dockerfile:1.7
+# SonarSentinel backend: API, job worker, CLI and watch mode (ST-005, 07-deployment §3).
+# Build from the repository root:
+#   docker build -f docker/Dockerfile.backend -t sonarsentinel/backend:1.0.0-rc1 .
+# CPU wheels by default; for NVIDIA GPUs pass the CUDA wheel index, e.g.
+#   --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cu128   (match your driver)
+
+FROM python:3.11-slim AS build
+ARG TORCH_INDEX=https://download.pytorch.org/whl/cpu
+ARG TORCH_VERSION=2.14.0
+ARG TORCHVISION_VERSION=0.29.0
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+RUN python -m venv /opt/venv
+ENV PATH=/opt/venv/bin:$PATH
+RUN pip install --upgrade pip setuptools wheel \
+    && pip install --index-url "${TORCH_INDEX}" \
+        "torch==${TORCH_VERSION}" "torchvision==${TORCHVISION_VERSION}"
+COPY backend/requirements-docker.txt /tmp/requirements-docker.txt
+RUN pip install -r /tmp/requirements-docker.txt
+COPY backend/pyproject.toml backend/README.md /app/backend/
+COPY backend/sonarsentinel /app/backend/sonarsentinel
+COPY backend/configs /app/backend/configs
+# Editable install keeps the package under /app/backend, so config and model paths that the
+# code resolves relative to the repository root land in /app (models → /app/models → /models).
+RUN pip install --no-deps -e /app/backend
+
+FROM python:3.11-slim AS runtime
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl libgl1 libglib2.0-0 libgomp1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --uid 1000 sonar
+COPY --from=build /opt/venv /opt/venv
+COPY --from=build /app /app
+RUN ln -s /app/backend/configs /app/configs \
+    && ln -s /models /app/models \
+    && mkdir -p /data /models /tiles /tmp/ultralytics \
+    && chown -R sonar:sonar /data /tmp/ultralytics
+ENV PATH=/opt/venv/bin:$PATH \
+    PYTHONUNBUFFERED=1 \
+    SS_CONFIG=/app/configs/pipeline.yaml \
+    SS_DATA_DIR=/data \
+    SS_MODELS_DIR=/models \
+    SONARSENTINEL_DATA_DIR=/data \
+    YOLO_CONFIG_DIR=/tmp/ultralytics
+WORKDIR /app
+USER sonar
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD curl -fsS http://localhost:8000/api/v1/health || exit 1
+CMD ["sonarsentinel", "serve", "--host", "0.0.0.0", "--port", "8000"]

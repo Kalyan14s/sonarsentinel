@@ -129,16 +129,18 @@
 ## 5. Compliance checklist (each release)
 
 - [x] Project licence decided and `LICENSE` file present (AGPL-3.0, 2026-09-13)
-- [ ] `THIRD_PARTY_NOTICES.txt` generated for Python and npm dependencies (exact versions)
-- [ ] ◻ entries re-checked for the exact shipped versions *(AI4Shipwrecks licence confirmed: CC BY 4.0)*
-- [ ] `react-leaflet` absent from `package.json` / lock file; SAM 3 not used anywhere
-- [ ] Excluded datasets (D3b, D4) absent from all manifests unless permission is recorded
-- [ ] Model cards list training sources and resulting use restrictions
-- [ ] No academic-only-trained model in a commercial build
-- [ ] Map attribution visible in the dashboard; offline tiles obtained in compliance with provider terms
-- [ ] "Not for navigation" notice shown when NOAA-derived data is used
-- [ ] No restricted/partner data, credentials or sensitive locations in the repository, deck, or demo recording
-- [ ] Dataset and paper citations included in docs, deck and final report
+*Status for the Sprint 6 build (checked 2026-09-14):*
+
+- [x] `THIRD_PARTY_NOTICES` generated for Python and npm dependencies (exact versions) — [`THIRD_PARTY_NOTICES.md`](../../THIRD_PARTY_NOTICES.md) via `scripts/third_party_notices.py`: 92 Python and 10 npm packages; the only flag (python-dateutil "Dual License", Apache-2.0/BSD) is a keyword false positive
+- [ ] ◻ entries re-checked for the exact shipped versions *(AI4Shipwrecks licence confirmed: CC BY 4.0; regenerate the notices after the Sprint 6 frontend upgrades and before tagging)*
+- [x] `react-leaflet` absent from `package.json` / lock file; SAM 3 not used anywhere *(no matches in `frontend/package.json`, `package-lock.json`, backend dependencies)*
+- [x] Excluded datasets (D3b, D4) absent from all manifests unless permission is recorded *(`sonar-seg@0.1.0` contains only Mine SSS (D2) and synthetic tiles; S3Simulator samples stay local-only)*
+- [ ] Model cards list training sources and resulting use restrictions *(done for `detector/yolo11s-seg-sonar-real@0.1.0`; PatchCore, FP filter and calibrator have experiment logs but no model cards yet)*
+- [x] No academic-only-trained model in a commercial build *(all models trained on D2, CC BY 4.0, and project-generated synthetic data; KLSG (D3) not used for training)*
+- [ ] Map attribution visible in the dashboard; offline tiles obtained in compliance with provider terms *(OpenStreetMap attribution shown; offline MBTiles for the demo region not yet rendered — must be self-rendered, not downloaded from tile.openstreetmap.org)*
+- [x] "Not for navigation" notice shown when NOAA-derived data is used *(not applicable: no NOAA-derived data in the build; the USGS Grand Bay survey is public domain)*
+- [ ] No restricted/partner data, credentials or sensitive locations in the repository, deck, or demo recording *(repository scan found no credentials and no restricted data; deck and demo recording still to check)*
+- [ ] Dataset and paper citations included in docs, deck and final report *(docs and final report draft cite sources; deck to check)*
 
 ## 6. Other compliance considerations
 

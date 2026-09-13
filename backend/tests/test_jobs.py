@@ -4,7 +4,9 @@ and jobs left over from a stopped server are failed on start-up."""
 
 from __future__ import annotations
 
+import copy
 import json
+import time
 from collections.abc import Iterator
 from importlib import resources
 from pathlib import Path
@@ -209,6 +211,63 @@ def test_cancel_queued_job(
     assert manager.replay(request.job_id) == []
     with pytest.raises(NotFoundError):
         manager.cancel("JOB-deadbeef")
+
+
+def test_job_timeout_fails_with_job_timeout(
+    tmp_path: Path, db: Database, config: dict[str, Any], survey_file: Path
+) -> None:
+    """ADR-019: a job running past ``jobs.max_job_seconds`` stops at its next checkpoint."""
+    from sonarsentinel.pipeline import PipelineCancelled
+
+    config["jobs"] = {"max_job_seconds": 0.3}
+
+    def slow_runner(
+        sources: list[Path], *, on_event: Any, should_cancel: Any, **kwargs: Any
+    ) -> dict[str, Any]:
+        for seq in range(1, 500):
+            on_event({"type": "progress", "seq": seq, "stage": "detect", "percent": 1.0})
+            if should_cancel():
+                raise PipelineCancelled("stopped")
+            time.sleep(0.02)
+        raise AssertionError("the timeout never fired")
+
+    manager = JobManager(db, config, tmp_path, runner=slow_runner)
+    seen: list[dict[str, Any]] = []
+    manager.add_listener(seen.append)
+    manager.start()
+    try:
+        request = _queue(db, manager, [survey_file])
+        body = manager.wait(request.job_id, timeout=30)
+    finally:
+        manager.stop()
+    assert body["status"] == "failed" and body["error"]["code"] == "JOB_TIMEOUT"
+    assert seen[-1]["type"] == "error" and seen[-1]["code"] == "JOB_TIMEOUT"
+
+
+def test_work_files_removed_unless_kept(
+    tmp_path: Path, db: Database, config: dict[str, Any], survey_file: Path
+) -> None:
+    """``SS_KEEP_WORK_FILES`` (``api.keep_work_files``) keeps ``work/<survey_id>``."""
+    from sonarsentinel.pipeline import PipelineCancelled
+
+    def runner(sources: list[Path], *, work_dir: Path, **kwargs: Any) -> dict[str, Any]:
+        Path(work_dir).mkdir(parents=True, exist_ok=True)
+        (Path(work_dir) / "chunk.npy").write_bytes(b"x")
+        raise PipelineCancelled("stop")
+
+    for keep, survey_id in ((False, "SRV-20260914-001"), (True, "SRV-20260914-002")):
+        cfg = copy.deepcopy(config)
+        cfg["api"] = {"keep_work_files": keep}
+        manager = JobManager(db, cfg, tmp_path, runner=runner)
+        manager.start()
+        try:
+            request = _queue(
+                db, manager, [survey_file], job_id=f"JOB-0000000{int(keep)}", survey_id=survey_id
+            )
+            manager.wait(request.job_id, timeout=30)
+        finally:
+            manager.stop()
+        assert (tmp_path / "work" / survey_id).exists() is keep
 
 
 def test_failed_job_and_recovery(tmp_path: Path, db: Database, config: dict[str, Any]) -> None:

@@ -1,0 +1,19 @@
+# NVIDIA GPU override (07-deployment §3). Needs the NVIDIA Container Toolkit.
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.gpu.yml up -d --build
+# The build argument selects CUDA PyTorch wheels; pick the index that matches torch 2.14 and your
+# driver on https://pytorch.org/get-started/locally/.
+services:
+  backend:
+    build:
+      args:
+        TORCH_INDEX: https://download.pytorch.org/whl/cu128
+    image: sonarsentinel/backend:1.0.0-rc1-gpu
+    environment:
+      SS_RUNTIME: auto
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
