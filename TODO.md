@@ -30,7 +30,7 @@ flowchart LR
 | Phase | Sprint | Dates (illustrative) | Milestone / gate | Goal | Items | Done |
 |---|---|---|---|---|---|---|
 | [0](#phase-0--documentation--design) | — | → 2026-09-13 | Docs baseline | Complete, verified documentation | 20 | 20 |
-| [1](#phase-1--sprint-0--project-setup) | S0 | 09-14 → 09-18 | M0 · IS (idea PDF due 09-30) | Team can build, test, collaborate; SIH idea submitted | 28 | 7 |
+| [1](#phase-1--sprint-0--project-setup) | S0 | 09-14 → 09-18 | M0 · IS (idea PDF due 09-30) | Team can build, test, collaborate; SIH idea submitted | 28 | 9 |
 | [2](#phase-2--sprint-1--ingest--geotagging) | S1 | 09-21 → 09-25 | M1 · G1 | Read sonar logs and place them correctly on a map | 20 | 0 |
 | [3](#phase-3--sprint-2--preprocessing--training-data) | S2 | 09-28 → 10-02 | M2 | Clean, tiled sonar data; training data ready | 19 | 0 |
 | [4](#phase-4--sprint-3--models--thin-slice) | S3 | 10-05 → 10-09 | M3 · G2 | Trained models; CLI report end to end | 20 | 0 |
@@ -79,7 +79,7 @@ flowchart LR
 
 **Dates:** 2026-09-14 → 09-18 · **Milestone:** M0 · **Sprint goal:** everyone can build, test and collaborate; datasets are downloading.
 
-> **Status 2026-09-13:** everything that can be done from this machine is done and verified (repository, scaffold, tests, pre-commit, idea deck, plans, drafts). The remaining items need **people** (SPOC, internal hackathon, team details, sign-offs, sending messages), **GitHub access** (push, CI run, branch protection, board) or **other laptops** (Ubuntu and teammates' environments).
+> **Status 2026-09-13:** repository published at **https://github.com/Kalyan14s/sonarsentinel** (public); first CI run passed. Everything that can be done from this machine is done and verified (repository, scaffold, tests, CI, pre-commit, idea deck, plans, drafts). The remaining items need **people** (SPOC, internal hackathon, team details, sign-offs, sending messages), **GitHub settings** (branch protection, project board) or **other laptops** (conda environment on Ubuntu, teammates' setups).
 
 ### SIH 2026 idea submission (deadline-critical)
 - [ ] **Today:** confirm the idea-submission deadline with the college SPOC (official guidelines say **30 Sept 2026**; an older PDF says 15 Sept). Message drafted: [Outreach §1](docs/communications/OUTREACH_DRAFTS.md#1-college-spoc--confirm-sih-2026-deadline-and-nomination-send-today) — R6
@@ -92,13 +92,13 @@ flowchart LR
 ### Environment & repository
 - [x] Move the working copy to a local, non-OneDrive path: **`C:\dev\sonarsentinel`** (OneDrive folder kept as a backup) — R6 ([why](docs/guides/DEVELOPER_SETUP.md#-windows-notes))
 - [ ] Install Git, Miniforge, Node LTS, Docker on every laptop ([Developer Setup §1](docs/guides/DEVELOPER_SETUP.md#1-prerequisites)). *This machine: Git ✅ Node ✅ Miniforge ✅ (26.7.2), Docker ❌; other laptops pending* — all
-- [ ] Create the private GitHub repository and push the documentation. *Blocked here: no GitHub CLI/account access; local repository on `main` is ready to push* — R6
-- [x] Tag the approved documentation baseline `docs-baseline-1.0`: done in the local repository (commit `420108a`); pushed together with the repository — R6
+- [x] Create the GitHub repository and push: **https://github.com/Kalyan14s/sonarsentinel** (public, by the team's choice); `main` pushed, commits authored by Kalyan — R6
+- [x] Tag the approved documentation baseline `docs-baseline-1.0` on commit `e418a6f`, pushed to GitHub — R6
 - [x] **ST-001** Scaffold repository and `sonarsentinel` package skeleton — P0 · R6 · 3 pts. *Verified: editable install, CLI smoke test, 32 tests pass (96% coverage), mypy strict clean*
-- [ ] **ST-002** CI: ruff, mypy, pytest, eslint, tsc, build on every PR — P0 · R6 · 3 pts. *Workflow written and the same commands pass locally; confirm checks run on the first push/PR (frontend steps activate in Sprint 3)*
-- [ ] **ST-003** Reproducible environments verified on Windows and Ubuntu — P0 · R6 · 3 pts. *Windows ✅ verified (GDAL 3.12.3, rasterio 1.4.4, pyproj 3.7.2, OpenCV 5.0.0, pyxtf 1.5.0); Ubuntu pending*
+- [x] **ST-002** CI: ruff, mypy, pytest, eslint, tsc, build on every PR — P0 · R6 · 3 pts. *Verified on GitHub: [first run](https://github.com/Kalyan14s/sonarsentinel/actions/runs/34753788111) passed (backend lint/types/tests, documentation checks, frontend job; frontend build steps activate in Sprint 3). "Failing checks block merge" takes effect once branch protection is on (ST-006)*
+- [ ] **ST-003** Reproducible environments verified on Windows and Ubuntu — P0 · R6 · 3 pts. *Windows ✅ conda environment verified (GDAL 3.12.3, rasterio 1.4.4, pyproj 3.7.2, OpenCV 5.0.0, pyxtf 1.5.0); Ubuntu: pip install + tests pass in CI ✅, conda `environment.yml` build on Ubuntu pending*
 - [x] **ST-004** `scripts/fetch_test_data.py` with checksums — P0 · R2 · 2 pts. *SHA-256 pinning, trust-on-first-use, idempotent skip, mismatch fails; 4 tests pass (manifest entries added when fixtures are chosen)*
-- [ ] **ST-006** pre-commit hooks, PR/issue templates, branch protection — P0 · R6 · 1 pt. *Hooks installed and passing on all files ✅; templates ✅; branch protection needs the GitHub repository*
+- [ ] **ST-006** pre-commit hooks, PR/issue templates, branch protection — P0 · R6 · 1 pt. *Hooks installed and passing on all files ✅; templates ✅; branch protection on `main` still to enable in the GitHub repository settings (require PR + passing CI)*
 - [ ] Create the GitHub Projects board; import EP-01…EP-12 and all stories — R6
 
 ### Data & external requests

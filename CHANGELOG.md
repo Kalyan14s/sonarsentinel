@@ -27,7 +27,9 @@ Categories: **Added** · **Changed** · **Deprecated** · **Removed** · **Fixed
 ### Notes
 - Verified on Windows 11 with Miniforge 26.7.2 (installer SHA-256 matched the GitHub release digest; signature valid) and Python 3.11.16: GDAL 3.12.3, rasterio 1.4.4, pyproj 3.7.2, OpenCV 5.0.0, pyxtf 1.5.0 import correctly
 - ruff check and format clean · mypy `--strict` no issues (14 files) · pytest 32 passed, 96% coverage · all pre-commit hooks pass
-- Not yet verified: CI on GitHub (repository not pushed), Ubuntu environment
+- Repository published: https://github.com/Kalyan14s/sonarsentinel (public); `main` and tag `docs-baseline-1.0` pushed
+- First CI run on GitHub passed: backend (lint, types, tests on Ubuntu), documentation checks, frontend job
+- Not yet verified: conda `environment.yml` build on Ubuntu; branch protection not yet enabled
 
 ## [0.2.0] — 2026-09-13 — Phase 0 complete
 
