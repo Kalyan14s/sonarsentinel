@@ -58,3 +58,22 @@
 | Unknown pixel size of the mine-SSS images | Synthetic object sizes can't be set in metres | Generator takes `--res-m`; record the assumption per tile; revisit when the paper or authors give the range |
 | Too few real labelled sites for grouped splits | < 4 sites with labels | Split mine-SSS by survey year (5 groups); add USGS/NOAA sites as labels arrive |
 | SIH deadline (30 Sept) competes for time | Deck not uploaded by Tuesday | PM timeboxes deck work; engineering stories unaffected |
+
+## 5. Progress (2026-09-13, branch `sprint-2/preprocess-data`, not yet merged)
+
+| Story | Status | Evidence / what is left |
+|---|---|---|
+| ST-032 | ✅ Acceptance met | TC-GEO-004, TC-GEO-005 |
+| ST-040 | ✅ Acceptance met (synthetic) | TC-PRE-001; real USGS lines track 0.49–1.2 m (recorded altitude invalid, so not a reference) |
+| ST-041 | ✅ | TC-PRE-005, TC-PRE-006 |
+| ST-042 | ✅ | TC-PRE-003, TC-PRE-004, end-to-end target geotag < 0.15 m |
+| ST-043 | ✅ | TC-PRE-008 |
+| ST-044 | ✅ | TC-PRE-009 |
+| ST-045 | ✅ | TC-PRE-007 |
+| ST-046 | ✅ | TC-PRE-010 |
+| ST-048 | 🟡 Built | Notebook + QA panels for 3 USGS lines; review at M2 demo |
+| ST-015 | ✅ | `sonar-seg@0.1.0`: site-grouped, leakage check passed, test hash frozen |
+| ST-016 | ✅ | 2,000 train + 200 holdout tiles with masks and parameters |
+| ST-014 | 🔴 Open | Tile export ready (`xtf_to_tiles.py`); labelling needs people and more real surveys |
+
+**Lessons from real data:** recorded altitude can't be trusted (USGS Grand Bay), and a first bottom-tracking rule tuned on synthetic data failed on shallow-water pings in three different ways. Perceptual hashes (dHash) flag unrelated side-scan images as duplicates, so the leakage check uses thumbnail correlation.

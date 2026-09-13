@@ -26,6 +26,31 @@ def test_bottom_tracking_recovers_altitude(tmp_path) -> None:  # type: ignore[no
     assert np.median(np.abs(track.altitude_m - 8.0)) < 0.2
 
 
+def test_thin_line_in_water_column_is_ignored() -> None:
+    """Real Klein files show a bright 1–3 sample line inside the water column; skip it."""
+    rng = np.random.default_rng(4)
+    n_pings, n_samples, first = 200, 4096, 400
+    side = rng.gamma(4.0, 2.0, (n_pings, n_samples)).astype(np.float32)  # dark water, ~8
+    side[:, 150:153] = 400.0  # artifact line
+    side[:, first:] = rng.gamma(4.0, 100.0, (n_pings, n_samples - first))  # seabed, ~400
+    side[60:80, first:1600] = rng.gamma(4.0, 2.0, (20, 1600 - first))  # 20 pings, no near return
+    track = track_bottom(side, side.copy(), 100.0)
+    assert np.all(np.abs(track.first_return - first) <= 25)  # the gap is bridged, not 39 m
+    assert np.median(track.altitude_m) == pytest.approx(first / n_samples * 100.0, abs=0.3)
+
+
+def test_shallow_water_without_dark_band() -> None:
+    """USGS Grand Bay pings: seabed bright right after the transmit pulse and across the range."""
+    rng = np.random.default_rng(7)
+    n_pings, n_samples, first = 300, 4096, 40
+    side = rng.gamma(4.0, 1.0, (n_pings, n_samples)).astype(np.float32)  # leading water, ~4
+    side[:, first:] = rng.gamma(4.0, 50.0, (n_pings, n_samples - first))  # seabed, ~200
+    side[:, 120:220] *= 0.2  # darker patch (grazing/shadow band) beyond the first return
+    track = track_bottom(side, side.copy(), 100.0)
+    assert np.all(np.abs(track.first_return - first) <= 12)
+    assert np.median(track.altitude_m) == pytest.approx(first / n_samples * 100.0, abs=0.25)
+
+
 def test_resolve_altitude_modes() -> None:
     recorded = np.array([8.0, 40.0, np.nan, 8.1])
     tracked = np.array([8.2, 3.0, 7.9, np.nan])

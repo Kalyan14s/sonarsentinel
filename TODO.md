@@ -32,7 +32,7 @@ flowchart LR
 | [0](#phase-0--documentation--design) | — | → 2026-09-13 | Docs baseline | Complete, verified documentation | 20 | 20 |
 | [1](#phase-1--sprint-0--project-setup) | S0 | 09-14 → 09-18 | M0 · IS (idea PDF due 09-30) | Team can build, test, collaborate; SIH idea submitted | 25 | 25 |
 | [2](#phase-2--sprint-1--ingest--geotagging) | S1 | 09-21 → 09-25 | M1 · G1 | Read sonar logs and place them correctly on a map | 14 | 14 |
-| [3](#phase-3--sprint-2--preprocessing--training-data) | S2 | 09-28 → 10-02 | M2 | Clean, tiled sonar data; training data ready | 28 | 0 |
+| [3](#phase-3--sprint-2--preprocessing--training-data) | S2 | 09-28 → 10-02 | M2 | Clean, tiled sonar data; training data ready | 28 | 12 |
 | [4](#phase-4--sprint-3--models--thin-slice) | S3 | 10-05 → 10-09 | M3 · G2 | Trained models; CLI report end to end | 20 | 0 |
 | [5](#phase-5--sprint-4--scoring-reports--api) | S4 | 10-12 → 10-16 | M4 · G3 | Trustworthy confidence; reports; upload + jobs API | 22 | 0 |
 | [6](#phase-6--sprint-5--dashboard-p0-freeze) | S5 | 10-19 → 10-23 | M5 · G4 | Live dashboard end to end; P0 freeze | 19 | 0 |
@@ -168,33 +168,33 @@ flowchart LR
 - [ ] G1 passed: contracts approved *(M1 exit criterion, moved from Phase 2)*
 
 ### Data & labelling
-- [ ] **ST-014** CVAT/Label Studio + SAM 2 (not SAM 3); label ≥ 100 real tiles (10% double-labelled) — P0 · R2 · 5 pts
-- [ ] **ST-015** Site-grouped splits, dataset manifest, stats report — P0 · R1 · 3 pts
-- [ ] **ST-016** Synthetic ghost-net generator v1 — P0 · R2 · 8 pts
+- [ ] **ST-014** CVAT/Label Studio + SAM 2 (not SAM 3); label ≥ 100 real tiles (10% double-labelled) — P0 · R2 · 5 pts. *Tile source ready: `ml/datasets/xtf_to_tiles.py` turns XTF into preprocessed 3-channel 640 px tiles with JSON sidecars (chunk/tile offsets, ping range, corner lat/lon); tested on a USGS line. **Open:** set up the labelling tool and label ≥ 100 tiles (people); more real surveys from ST-013 help*
+- [x] **ST-015** Site-grouped splits, dataset manifest, stats report — P0 · R1 · 3 pts. *`ml/datasets/make_splits.py`: exhaustive site assignment (train 70 · val 10 · calib 5 · test 15%), synthetic tiles train-only, holdout background site (2017) kept out of train; automated leakage check (site overlap + 64 × 64 thumbnail correlation ≥ 0.97; dHash was rejected because unrelated waterfalls hash within 3 bits) passed. Manifest `data/manifests/sonar-seg-0.1.0.json`, stats report, test hash frozen. Splits: train 2010+2018+synthetic (2,909 images), val 2017 (93), calib 2021 (48), test 2015 (120; 242 cylinders, the most positive-rich site)*
+- [x] **ST-016** Synthetic ghost-net generator v1 — P0 · R2 · 8 pts. *`ml/synth/ghost_net_generator.py` (mesh, crumple, envelope, ropes/floats, burial, Rayleigh-speckle highlight, far-range shadow, blend): **2,000 train tiles** (3,433 net polygons) + 200 holdout tiles on unseen 2017 backgrounds, each with PNG, mask, YOLO-seg label and `*.params.json` (seed and all parameters). Spot check: nets with floats/ropes and correct shadow side look plausible; some solid clumps look more like debris (tune in ST-018). **Assumption:** 0.10 m/px for the mine-SSS backgrounds*
 
 ### Navigation
-- [ ] **ST-032** Navigation cleaning: invalid fixes, smoothing, circular heading — P0 · R3 · 3 pts
+- [x] **ST-032** Navigation cleaning: invalid fixes, smoothing, circular heading — P0 · R3 · 3 pts. *`geo/navigation.py`: speed-gated fix rejection anchored at the median position, UTM Savitzky–Golay smoothing, circular heading smoothing, COG fallback; TC-GEO-004 (358°…2° → 0°) and TC-GEO-005 ((0,0) + 500 m jump interpolated to < 5 cm, `GPS_INTERPOLATED`) pass*
 
 ### Preprocessing
-- [ ] **ST-040** Bottom tracking + water-column mask — P0 · R2 · 3 pts
-- [ ] **ST-041** Gain normalisation (across/along-track, per side) — P0 · R2 · 3 pts
-- [ ] **ST-042** Slant-range correction + along-track resampling — P0 · R2 · 5 pts
-- [ ] **ST-043** Dropout detection, inpainting, masks — P0 · R2 · 3 pts
-- [ ] **ST-044** Motion flags (roll, pitch, yaw rate) — P0 · R2 · 2 pts
-- [ ] **ST-045** 3-channel input (raw, Lee, local std) — P0 · R2 · 2 pts
-- [ ] **ST-046** Tiling + chunking with overlap — P0 · R4 · 3 pts
-- [ ] **ST-048** Preprocessing QA notebook — P0 · R2 · 2 pts
+- [x] **ST-040** Bottom tracking + water-column mask — P0 · R2 · 3 pts. *`preprocess/bottom.py`: TD-01 altitude recovered within 10% (TC-PRE-001). On real USGS lines the recorded altitude is invalid (1–74 m in ~2 m of water), so it can't be the reference; tracking gives 0.49–1.2 m with no outlier runs after three fixes found on real data (persistent-return rule against artifact lines, water-column level from leading samples plus a relative rise, 1,000-ping continuity check). `auto` mode swaps in tracked altitude and flags `NO_ALTITUDE_BOTTOM_TRACKED`*
+- [x] **ST-041** Gain normalisation (across/along-track, per side) — P0 · R2 · 3 pts. *`preprocess/gain.py`: column means within ±10% (TC-PRE-005); port/starboard medians within 5% after 2× roll imbalance (TC-PRE-006)*
+- [x] **ST-042** Slant-range correction + along-track resampling — P0 · R2 · 5 pts. *`preprocess/geometry.py`: 20 m object at nadir ± 200 px (TC-PRE-003); 5 m object spans 50 ± 1 rows with 3–25 cm ping spacing (TC-PRE-004); end to end on curved TD-01 targets geotag within 0.15 m after S2–S7*
+- [x] **ST-043** Dropout detection, inpainting, masks — P0 · R2 · 3 pts. *`preprocess/dropout.py`: ≥ 95% of injected zeroed/frozen pings found, gaps ≤ 3 inpainted, longer and edge gaps masked (TC-PRE-008)*
+- [x] **ST-044** Motion flags (roll, pitch, yaw rate) — P0 · R2 · 2 pts. *`preprocess/motion.py`: flags exactly on pings over threshold, yaw rate wraps at 360° (TC-PRE-009); quality events per ping range*
+- [x] **ST-045** 3-channel input (raw, Lee, local std) — P0 · R2 · 2 pts. *`preprocess/channels.py` is the single implementation; `ml/datasets/xtf_to_tiles.py` imports it, checked by TC-PRE-007*
+- [x] **ST-046** Tiling + chunking with overlap — P0 · R4 · 3 pts. *`preprocess/tiling.py` + `preprocess/pipeline.py`: exact tile ↔ chunk round trip, full coverage with edge-aligned last tile, 25% overlap, masked tiles skipped (TC-PRE-010); chunks follow `pipeline.yaml`*
+- [ ] **ST-048** Preprocessing QA notebook — P0 · R2 · 2 pts. *`ml/notebooks/preprocessing_qa.ipynb` + `scripts/preprocess_qa.py` render six before/after panels per file with a review checklist; panels generated for 3 USGS lines. **Open:** team review at the M2 demo*
 
 ### Other tasks
 - [ ] Annotation calibration session (20 shared tiles) and agreement metrics ([Guidelines §9](docs/data/ANNOTATION_GUIDELINES.md#9-quality-control)) — R2
-- [ ] Publish dataset manifest `sonar-seg@0.1.0` — R1
-- [ ] Automate TC-PRE-001…011 — R2
+- [ ] Publish dataset manifest `sonar-seg@0.1.0` — R1. *Generated: `data/manifests/sonar-seg-0.1.0.json` + `.stats.md`. **Open:** commit, and push `data/processed/sonar-seg` to DVC; it covers mine-SSS + synthetic only until NOMBO review (ST-011) and AI4Shipwrecks (ST-010) land*
+- [x] Automate TC-PRE-001…011 — R2. *Automated: TC-PRE-001, 003…010 (and TC-GEO-004/005). **Carried over:** TC-PRE-002 and TC-PRE-011 need the detector (Sprint 3, ST-075)*
 - [ ] Sprint review: M2 demo with before/after preprocessing visuals — R2
 
 ### Exit criteria (M2)
-- [ ] Preprocessing visually verified (QA notebook reviewed)
-- [ ] Datasets converted; splits pass the leakage check
-- [ ] Synthetic ghost-net generator produces tiles + masks
+- [ ] Preprocessing visually verified (QA notebook reviewed). *Panels checked during development (bottom track on the seabed edge, flat gain, clean ground-range image); formal review at the M2 demo*
+- [ ] Datasets converted; splits pass the leakage check. *Splits pass; mine-SSS and synthetic converted. **Open:** AI4Shipwrecks (ST-010) and NOMBO review (ST-011)*
+- [x] Synthetic ghost-net generator produces tiles + masks. *2,000 + 200 holdout tiles with masks, labels and parameters*
 
 ---
 

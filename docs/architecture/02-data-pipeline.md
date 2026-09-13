@@ -129,7 +129,8 @@ Large files are read **ping-by-ping into memory-mapped arrays** so the whole fil
 4. **Layback**: if only ship position exists, compute towfish position from cable out and sensor depth (see [Geotagging](04-geotagging-engine.md#4-layback-correction)); flag `LAYBACK_ESTIMATED`.
 
 ### S3 · Bottom tracking
-- If `altitude_m` is missing or implausible, detect the first seabed return per ping (smoothed intensity above k × noise floor), then median-filter across pings (window 31).
+- Detect the first seabed return per ping: the first sample after the transmit blanking where smoothed port+starboard intensity exceeds `max(k × water level, water level + 0.3 × (seabed median − water level))` and stays above it for ~1% of the range (thin water-column lines are ignored). Water level = the lower of the 5th percentile of the first half and the median of the leading samples. Runs of pings far from a 1,000-ping rolling median are interpolated, then a 31-ping median filter is applied.
+- Altitude (`bottom_tracking.enabled: auto`): recorded altitude is kept where it agrees with the tracked value within 25%; otherwise tracked altitude is used and `NO_ALTITUDE_BOTTOM_TRACKED` is raised. Real USGS Klein files record invalid altitudes, so `auto` is the default.
 - Build the **water-column mask** (samples before the first return), which removes nadir and fish-school clutter.
 - Flag `NO_ALTITUDE_BOTTOM_TRACKED` at survey level when used.
 
@@ -148,7 +149,7 @@ Large files are read **ping-by-ping into memory-mapped arrays** so the whole fil
 
 | Mask / flag | Rule (defaults, configurable) | Effect |
 |---|---|---|
-| `DROPOUT` | Row std < 5% of median row std, or row mean < 1, or duplicate of previous row, or invalid nav | Gaps ≤ 3 pings inpainted; longer gaps masked (no detections inside); overlapping detections get a penalty |
+| `DROPOUT` | Row std < 5% of median row std, or row mean < 1, or duplicate of previous row (invalid nav is interpolated in S2 and flagged `GPS_INTERPOLATED`, not treated as an image dropout) | Gaps ≤ 3 pings inpainted; longer gaps masked (no detections inside); overlapping detections get a penalty |
 | `HIGH_MOTION` | \|roll\| > 5°, \|pitch\| > 5°, or yaw rate > 3°/ping | Penalty; track segment highlighted in UI |
 | `SURFACE_RETURN_BAND` (P1) | Columns where slant range ≈ sensor depth (± 0.5 m) | Linear detections parallel to track in the band suppressed |
 | `NEAR_NADIR` | Ground range < 0.3 × altitude (steep-incidence zone, poor shadows, strong distortion) | Penalty; flag |

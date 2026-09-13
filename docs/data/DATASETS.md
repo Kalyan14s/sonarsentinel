@@ -74,6 +74,7 @@ The pipeline **trains on the first kind and runs on the second**, computing GPS 
 - **Backgrounds:** real normal seafloor tiles from D3, D6, D7, D8
 - **Metadata:** every generated tile stores its generator version, seed and parameters (`*.params.json`)
 - **Rule:** ≤ 40% of positive training tiles; separate **synthetic ghost-net holdout** built on background sites never used in training
+- **Status (2026-09-13):** ghost-net generator 1.0.0 produced 2,000 train tiles on 2010/2015/2018/2021 mine-SSS backgrounds and 200 holdout tiles on 2017 backgrounds (site 2017 is excluded from the train split). There are no real ghost-net samples yet, so the 40% rule can only be applied at training time by sampling (ST-051). Background pixel size is assumed to be 0.10 m/px
 
 ### D6 · NOAA NCEI hydrographic surveys
 - **Sources:**
@@ -161,15 +162,15 @@ flowchart LR
     SPLIT --> MAN["Manifest + stats<br/>(hash frozen for test)"]
 ```
 
-| Script (planned) | Purpose |
-|---|---|
-| `ml/datasets/download.py` | Download with checksums where available; write provenance stub |
-| `ml/datasets/convert_ai4shipwrecks.py` | Masks → polygons |
-| `ml/datasets/convert_mine_sss.py` | Annotations → YOLO; MILCO/NOMBO mapping |
-| `ml/datasets/build_normal_pool.py` | Seafloor tiles for PatchCore |
-| `ml/datasets/xtf_to_tiles.py` | NOAA/USGS XTF → preprocessed tiles for labelling / pseudo-labelling |
-| `ml/datasets/make_splits.py` | Grouped splits + leakage check + manifest |
-| `ml/datasets/stats.py` | Class counts, object sizes (m), per-site distribution |
+| Script | Purpose | Status |
+|---|---|---|
+| `ml/datasets/download.py` | Download with checksums where available; write provenance stub | Planned (downloads so far done by hand with provenance files) |
+| `ml/datasets/convert_ai4shipwrecks.py` | Masks → polygons | ✅ Ready, waiting for the dataset |
+| `ml/datasets/convert_mine_sss.py` | Annotations → YOLO; MILCO/NOMBO mapping | ✅ Run |
+| `ml/datasets/build_normal_pool.py` | Seafloor tiles for PatchCore | ✅ Run (1,687 tiles) |
+| `ml/datasets/xtf_to_tiles.py` | NOAA/USGS XTF → preprocessed tiles for labelling / pseudo-labelling | ✅ Ready |
+| `ml/datasets/make_splits.py` | Grouped splits + leakage check + manifest + stats report | ✅ Run (`sonar-seg@0.1.0`) |
+| `ml/synth/ghost_net_generator.py` | Synthetic ghost nets (D5) | ✅ Run (1.0.0: 2,000 + 200 holdout) |
 
 **Dataset YAML (`ml/datasets/sonar-seg.yaml`):**
 ```yaml

@@ -7,7 +7,22 @@ Categories: **Added** · **Changed** · **Deprecated** · **Removed** · **Fixed
 
 ## [Unreleased]
 
-*(Sprint 1 / Phase 2 in progress on branch `sprint-1/ingest-geo`.)*
+*(Phase 2 merged to `main` in `8d13648`. Sprint 2 / Phase 3 in progress on branch `sprint-2/preprocess-data`.)*
+
+### Added (Sprint 2)
+- Navigation cleaning (ST-032): speed-gated invalid-fix detection, UTM Savitzky–Golay smoothing, circular heading smoothing, COG fallback
+- Preprocessing stages (ST-040…046): bottom tracking with altitude resolution, gain normalisation, slant-range correction and along-track resampling, dropout detection and repair, motion flags, 3-channel input, tiling; `preprocess/pipeline.py` runs S2–S7 per chunk into `ProcessedChunk`
+- `ml/datasets/xtf_to_tiles.py` (labelling tiles with sidecars), `scripts/preprocess_qa.py` + `ml/notebooks/preprocessing_qa.ipynb` (ST-048)
+- Synthetic ghost-net generator v1 `ml/synth/ghost_net_generator.py` (ST-016)
+- `ml/datasets/make_splits.py` (ST-015): site-grouped splits, holdout-site exclusion, leakage check, manifest, stats report, Ultralytics YAML
+- Sprint 2 plan
+
+### Data (Sprint 2)
+- Synthetic ghost nets 1.0.0: 2,000 train tiles + 200 holdout tiles (generated locally, reproducible from seed 2026)
+- Dataset manifest `sonar-seg@0.1.0` (mine-SSS + synthetic; test = site 2015, hash frozen)
+
+### Fixed (Sprint 2)
+- Bottom tracking on shallow-water Klein data: ignore thin artifact lines, estimate the water-column level from the leading samples with a relative rise, and remove long outlier runs with a 1,000-ping continuity check
 
 ### Added
 - `SonarLog` contract 1.0 (ST-020): `image`, `ground_range_corrected`, warning codes, `has_navigation`
