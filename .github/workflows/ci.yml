@@ -168,7 +168,7 @@ jobs:
       # TC-SEC-004 image scan: report CRITICAL and HIGH with a fix available; fail on CRITICAL only
       # (HIGH findings in the Debian/Alpine base images are reviewed from the uploaded reports).
       - name: Trivy report (backend)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: sonarsentinel/backend:ci
           format: table
@@ -177,7 +177,7 @@ jobs:
           ignore-unfixed: true
           exit-code: "0"
       - name: Trivy report (frontend)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: sonarsentinel/frontend:ci
           format: table
@@ -191,7 +191,7 @@ jobs:
           name: trivy-reports
           path: trivy-*.txt
       - name: Trivy gate (backend, critical)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: sonarsentinel/backend:ci
           format: table
@@ -199,7 +199,7 @@ jobs:
           ignore-unfixed: true
           exit-code: "1"
       - name: Trivy gate (frontend, critical)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: sonarsentinel/frontend:ci
           format: table

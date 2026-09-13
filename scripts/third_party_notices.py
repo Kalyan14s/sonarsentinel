@@ -228,7 +228,7 @@ def main() -> None:
         "- NOAA-derived data: *Not to be used for navigation.*",
         "",
     ]
-    OUTPUT.write_text("\n".join(lines), encoding="utf-8")
+    OUTPUT.write_text("\n".join(lines), encoding="utf-8", newline="\n")
     print(
         f"wrote {OUTPUT.name}: {len(python_rows)} Python, {len(npm_rows)} npm, "
         f"{len(flagged)} flagged"
