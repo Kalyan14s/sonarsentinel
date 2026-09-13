@@ -29,7 +29,11 @@ Categories: **Added** · **Changed** · **Deprecated** · **Removed** · **Fixed
 - ruff check and format clean · mypy `--strict` no issues (14 files) · pytest 32 passed, 96% coverage · all pre-commit hooks pass
 - Repository published: https://github.com/Kalyan14s/sonarsentinel (public); `main` and tag `docs-baseline-1.0` pushed
 - First CI run on GitHub passed: backend (lint, types, tests on Ubuntu), documentation checks, frontend job
-- Not yet verified: conda `environment.yml` build on Ubuntu; branch protection not yet enabled
+- CI job builds the conda environment and runs tests on ubuntu-latest and windows-latest: passing (ST-003)
+- Branch protection on `main`: pull request required, 5 required checks, no force pushes or deletion (ST-006)
+- 91 backlog stories created as GitHub issues with epic/priority/role labels and sprint milestones S0–S6 + Backlog
+- DVC initialised (analytics off, local remote); datasets downloaded with provenance and added to DVC: mine-detection SSS (0.61 GB, MD5 verified), SeabedObjects-KLSG (48 MB). AI4Shipwrecks licence confirmed CC BY 4.0 (automated download blocked, needs browser download); S3Simulator samples kept locally for private evaluation only (no licence)
+- Idea deck: team name "Vashishta" on the title slide and team badges (team ID pending)
 
 ## [0.2.0] — 2026-09-13 — Phase 0 complete
 

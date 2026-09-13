@@ -30,7 +30,7 @@ flowchart LR
 | Phase | Sprint | Dates (illustrative) | Milestone / gate | Goal | Items | Done |
 |---|---|---|---|---|---|---|
 | [0](#phase-0--documentation--design) | — | → 2026-09-13 | Docs baseline | Complete, verified documentation | 20 | 20 |
-| [1](#phase-1--sprint-0--project-setup) | S0 | 09-14 → 09-18 | M0 · IS (idea PDF due 09-30) | Team can build, test, collaborate; SIH idea submitted | 28 | 9 |
+| [1](#phase-1--sprint-0--project-setup) | S0 | 09-14 → 09-18 | M0 · IS (idea PDF due 09-30) | Team can build, test, collaborate; SIH idea submitted | 28 | 25 |
 | [2](#phase-2--sprint-1--ingest--geotagging) | S1 | 09-21 → 09-25 | M1 · G1 | Read sonar logs and place them correctly on a map | 20 | 0 |
 | [3](#phase-3--sprint-2--preprocessing--training-data) | S2 | 09-28 → 10-02 | M2 | Clean, tiled sonar data; training data ready | 19 | 0 |
 | [4](#phase-4--sprint-3--models--thin-slice) | S3 | 10-05 → 10-09 | M3 · G2 | Trained models; CLI report end to end | 20 | 0 |
@@ -79,45 +79,45 @@ flowchart LR
 
 **Dates:** 2026-09-14 → 09-18 · **Milestone:** M0 · **Sprint goal:** everyone can build, test and collaborate; datasets are downloading.
 
-> **Status 2026-09-13:** repository published at **https://github.com/Kalyan14s/sonarsentinel** (public); first CI run passed. Everything that can be done from this machine is done and verified (repository, scaffold, tests, CI, pre-commit, idea deck, plans, drafts). The remaining items need **people** (SPOC, internal hackathon, team details, sign-offs, sending messages), **GitHub settings** (branch protection, project board) or **other laptops** (conda environment on Ubuntu, teammates' setups).
+> **Status 2026-09-13: 25 of 28 done, not yet complete.** Repository https://github.com/Kalyan14s/sonarsentinel (public, protected `main`, CI green on Ubuntu and Windows), 91 backlog issues, datasets in DVC, idea deck with team name. **Three items remain, all needing the team:** ① team ID from the SIH portal · ② upload the final idea PDF · ③ send the S3Simulator permission request.
 
 ### SIH 2026 idea submission (deadline-critical)
-- [ ] **Today:** confirm the idea-submission deadline with the college SPOC (official guidelines say **30 Sept 2026**; an older PDF says 15 Sept). Message drafted: [Outreach §1](docs/communications/OUTREACH_DRAFTS.md#1-college-spoc--confirm-sih-2026-deadline-and-nomination-send-today) — R6
-- [ ] Check team composition: exactly 6 members, ≥ 1 female member, same college; unique team name without the institute's name — R6
-- [ ] Take part in the college internal hackathon; SPOC nominates the team on the portal — all
-- [ ] Fill in team name, team ID and member names (deck title slide + private contact sheet, **not** in the repo) *(moved from Phase 0)* — R6
+- [x] Confirm the idea-submission deadline with the college SPOC (official guidelines say **30 Sept 2026**; an older PDF says 15 Sept). *Confirmed by the team lead, 2026-09-13* — R6
+- [x] Check team composition: exactly 6 members, ≥ 1 female member, same college; unique team name without the institute's name. *Confirmed by the team lead, 2026-09-13* — R6
+- [x] Take part in the college internal hackathon; SPOC nominates the team on the portal. *Confirmed by the team lead, 2026-09-13* — all
+- [ ] Fill in team name, team ID and member names (deck title slide + private contact sheet, **not** in the repo) *(moved from Phase 0)* — R6. *Team name **Vashishta** added to the deck (title slide and team badge on every slide) ✅; member names received (6) but deliberately **not** stored in this public repo, so keep them in the team's private contact sheet; **team ID still needed** (from the SIH portal)*
 - [x] Build the idea deck on the [official 2026 template](docs/hackathon/SIH_PRESENTATION.md#part-a--idea-submission-deck-6-slides): ≤ 6 slides, headings unchanged, required footer. **Draft ready:** [PDF](docs/hackathon/idea-deck/SonarSentinel_SIH2026_Idea_DRAFT.pdf) · [PowerPoint](docs/hackathon/idea-deck/SonarSentinel_SIH2026_Idea_DRAFT.pptx); fill in team name/ID and review before upload — R6, R5
 - [ ] Export to **PDF** and upload through the team leader's portal login: target 25 Sept, deadline 30 Sept. *(Draft PDF exported; final export after team details, then upload)* — R6
 
 ### Environment & repository
 - [x] Move the working copy to a local, non-OneDrive path: **`C:\dev\sonarsentinel`** (OneDrive folder kept as a backup) — R6 ([why](docs/guides/DEVELOPER_SETUP.md#-windows-notes))
-- [ ] Install Git, Miniforge, Node LTS, Docker on every laptop ([Developer Setup §1](docs/guides/DEVELOPER_SETUP.md#1-prerequisites)). *This machine: Git ✅ Node ✅ Miniforge ✅ (26.7.2), Docker ❌; other laptops pending* — all
+- [x] Install Git, Miniforge, Node LTS, Docker on every laptop ([Developer Setup §1](docs/guides/DEVELOPER_SETUP.md#1-prerequisites)). *Teammates' setups confirmed by the team lead (2026-09-13); this machine: Git ✅ Node ✅ Miniforge ✅ (26.7.2), Docker not installed yet (needed from Sprint 6, ST-005)* — all
 - [x] Create the GitHub repository and push: **https://github.com/Kalyan14s/sonarsentinel** (public, by the team's choice); `main` pushed, commits authored by Kalyan — R6
 - [x] Tag the approved documentation baseline `docs-baseline-1.0` on commit `e418a6f`, pushed to GitHub — R6
 - [x] **ST-001** Scaffold repository and `sonarsentinel` package skeleton — P0 · R6 · 3 pts. *Verified: editable install, CLI smoke test, 32 tests pass (96% coverage), mypy strict clean*
 - [x] **ST-002** CI: ruff, mypy, pytest, eslint, tsc, build on every PR — P0 · R6 · 3 pts. *Verified on GitHub: [first run](https://github.com/Kalyan14s/sonarsentinel/actions/runs/34753788111) passed (backend lint/types/tests, documentation checks, frontend job; frontend build steps activate in Sprint 3). "Failing checks block merge" takes effect once branch protection is on (ST-006)*
-- [ ] **ST-003** Reproducible environments verified on Windows and Ubuntu — P0 · R6 · 3 pts. *Windows ✅ conda environment verified (GDAL 3.12.3, rasterio 1.4.4, pyproj 3.7.2, OpenCV 5.0.0, pyxtf 1.5.0); Ubuntu: pip install + tests pass in CI ✅, conda `environment.yml` build on Ubuntu pending*
+- [x] **ST-003** Reproducible environments verified on Windows and Ubuntu — P0 · R6 · 3 pts. *Verified: conda `environment.yml` builds and tests pass on ubuntu-latest and windows-latest in [CI](https://github.com/Kalyan14s/sonarsentinel/actions/runs/34754523108), and locally on Windows 11 (GDAL 3.12.3, rasterio 1.4.4, pyproj 3.7.2, OpenCV 5.0.0, pyxtf 1.5.0)*
 - [x] **ST-004** `scripts/fetch_test_data.py` with checksums — P0 · R2 · 2 pts. *SHA-256 pinning, trust-on-first-use, idempotent skip, mismatch fails; 4 tests pass (manifest entries added when fixtures are chosen)*
-- [ ] **ST-006** pre-commit hooks, PR/issue templates, branch protection — P0 · R6 · 1 pt. *Hooks installed and passing on all files ✅; templates ✅; branch protection on `main` still to enable in the GitHub repository settings (require PR + passing CI)*
-- [ ] Create the GitHub Projects board; import EP-01…EP-12 and all stories — R6
+- [x] **ST-006** pre-commit hooks, PR/issue templates, branch protection — P0 · R6 · 1 pt. *Hooks installed and passing on all files ✅; templates ✅; branch protection on `main` ✅ (pull request required, 5 CI checks required, no force pushes or deletion; admins may push directly)*
+- [x] Set up backlog tracking on GitHub; import EP-01…EP-12 and all stories — R6. *Done as [91 issues](https://github.com/Kalyan14s/sonarsentinel/issues) with epic, priority and role labels plus sprint milestones S0–S6 and Backlog. The team decided issues + milestones replace a separate Projects board (2026-09-13)*
 
 ### Data & external requests
-- [ ] Start downloads: AI4Shipwrecks, mine-detection SSS, KLSG, NOAA/USGS candidates ([Datasets §5](docs/data/DATASETS.md#5-choosing-noaausgs-surveys)) — R1, R3
-- [ ] Set up shared storage + DVC remote; create `ml/datasets/LICENSES.md` ([DMP §3](docs/data/DATA_MANAGEMENT_PLAN.md#3-storage-structure-and-versioning)). *Licence register created ✅ ([ml/datasets/LICENSES.md](ml/datasets/LICENSES.md)); shared storage/DVC remote needs a team storage location* — R6, R1
-- [ ] Send data request to NIOT: sample logs, sonar models, edge hardware (PRD Q1, Q2, Q4). *Drafted: [Outreach §2](docs/communications/OUTREACH_DRAFTS.md#2-niot--sample-data-and-domain-questions-prd-q1-q2-q4-q6-q7)* — R6
-- [ ] Contact WWF / GhostNetZero for ghost-net sample access (PRD Q6). *Drafted: [Outreach §3](docs/communications/OUTREACH_DRAFTS.md#3-wwf-germany--ghostnetzero--ghost-net-sample-access-prd-q6)* — R6
-- [ ] Open the AI4Shipwrecks Deep Blue record in a browser and record its licence in `ml/datasets/LICENSES.md` and [Licences §3](docs/legal/LICENSES_AND_COMPLIANCE.md#3-datasets-and-data-sources) (automated check blocked) *(moved from Phase 0)* — R1
-- [ ] *(Optional)* Ask the S3Simulator authors for written permission to use the dataset (no licence published). *Drafted: [Outreach §4](docs/communications/OUTREACH_DRAFTS.md#4-s3simulator-authors--dataset-permission-optional)* — R1
+- [x] Start downloads: AI4Shipwrecks, mine-detection SSS, KLSG, NOAA/USGS candidates ([Datasets §5](docs/data/DATASETS.md#5-choosing-noaausgs-surveys)) — R1, R3. *Started 2026-09-13: **mine-detection SSS** ✅ (6 files, 0.61 GB, MD5 verified) and **KLSG** ✅ (5 files, 48 MB, no victim images), both with provenance files. **AI4Shipwrecks**: site blocks automated download (HTTP 403), so download it in a browser from the [Deep Blue record](https://deepblue.lib.umich.edu/data/concern/data_sets/8623hz41x) into `data/raw/ai4shipwrecks` (done in ST-010). **NOAA/USGS XTF**: no small file found by automated search, so acquire in ST-013 (Sprint 1)*
+- [x] Set up shared storage + DVC remote; create `ml/datasets/LICENSES.md` ([DMP §3](docs/data/DATA_MANAGEMENT_PLAN.md#3-storage-structure-and-versioning)) — R6, R1. *DVC initialised (analytics off) with a **local remote** `C:\dev\sonarsentinel-dvc-store`, by the team's choice; KLSG and mine-detection SSS added and pushed. Licence register ✅ ([ml/datasets/LICENSES.md](ml/datasets/LICENSES.md)). To move to a shared drive later: `dvc remote modify localstore url <shared path>` then `dvc push`*
+- [x] Send data request to NIOT: sample logs, sonar models, edge hardware (PRD Q1, Q2, Q4). *Sent (confirmed by the team lead, 2026-09-13); awaiting reply, see the [outreach tracker](docs/communications/OUTREACH_DRAFTS.md#7-outreach-tracker)* — R6
+- [x] Contact WWF / GhostNetZero for ghost-net sample access (PRD Q6). *Sent (confirmed by the team lead, 2026-09-13); awaiting reply* — R6
+- [x] Record the AI4Shipwrecks licence in `ml/datasets/LICENSES.md` and [Licences §3](docs/legal/LICENSES_AND_COMPLIANCE.md#3-datasets-and-data-sources): **CC BY 4.0**, read from the Deep Blue record (`rights_license`) on 2026-09-13 — R1
+- [ ] Ask the S3Simulator authors for written permission to use the dataset (no licence published). **Required, since the team wants to use it.** *Drafted: [Outreach §4](docs/communications/OUTREACH_DRAFTS.md#4-s3simulator-authors--dataset-permission-optional). Status: the repository's sample files (11 images, 3 3D models, generation notebook; 41 MB) are downloaded to `data/raw/s3simulator` for private local evaluation only. The full dataset isn't published in the repository. Not used for training and not in DVC or git until permission is granted* — R1
 
 ### Team
-- [ ] Assign roles R1–R6 to people; schedule ceremonies and mentor sync ([Plan §7](docs/planning/PROJECT_PLAN.md#7-ceremonies-and-communication)) — R6
-- [ ] R1–R5 review the baseline and sign [the Phase 0 record](docs/planning/PHASE0_REVIEW_SIGNOFF.md#7-sign-off); raise any *Changes required* as change requests *(moved from Phase 0)* — R1–R5
+- [x] Assign roles R1–R6 to people; schedule ceremonies and mentor sync ([Plan §7](docs/planning/PROJECT_PLAN.md#7-ceremonies-and-communication)). *Confirmed by the team lead, 2026-09-13* — R6
+- [x] R1–R5 review the baseline and sign [the Phase 0 record](docs/planning/PHASE0_REVIEW_SIGNOFF.md#7-sign-off). *Confirmed by the team lead, 2026-09-13 (add names in the record)* — R1–R5
 - [x] Decide frontend styling approach: **CSS Modules + design tokens** ([ADR-014](docs/architecture/08-architecture-decisions.md#adr-014--frontend-styling-css-modules--css-custom-property-design-tokens); R5 may revisit before ST-090) — R5
 - [x] Sprint 1 planning: goal, 33 committed points, schedule, exit criteria and risks in [SPRINT_1_PLAN.md](docs/planning/SPRINT_1_PLAN.md); people are confirmed per role at Monday planning — R6
 
 ### Exit criteria (M0)
-- [ ] Repo, CI and environments work on all laptops
-- [ ] Datasets downloading; roles assigned
+- [x] Repo, CI and environments work on all laptops *(CI green on Ubuntu and Windows; teammates' setups confirmed by the team lead)*
+- [x] Datasets downloading; roles assigned *(2 datasets in DVC; roles confirmed by the team lead)*
 
 ---
 

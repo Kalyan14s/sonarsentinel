@@ -1,0 +1,21 @@
+{
+  "klsg": {
+    "status": "ok",
+    "files": 5,
+    "size_mb": 50.1,
+    "commit": "7cc73aa7879074e800510068aaa36c2865615d52",
+    "victim_like_files": 0
+  },
+  "usgs_xtf_sample": {
+    "status": "no suitable small .xtf (or xtf zip) found via ScienceBase search"
+  },
+  "mine_sss_2024": {
+    "status": "ok",
+    "files": 6,
+    "size_gb": 0.61,
+    "all_md5_verified": true
+  },
+  "ai4shipwrecks": {
+    "status": "error: HTTPError: HTTP Error 403: Forbidden"
+  }
+}

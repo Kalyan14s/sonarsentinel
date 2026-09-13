@@ -1,0 +1,16 @@
+id: D4
+name: S3Simulator (repository sample files)
+source_url: https://github.com/NambiarAthira/S3Simulator
+source_commit: 6be5323942e5fc4a49e0533d37c966f9094ebc17
+downloaded_utc: '2026-09-13'
+downloaded_by: automated download (R6)
+licence_terms: No licence published for the dataset or repository (all rights reserved by default). README asks for citation only.
+allowed_use: Private local evaluation only. Not for training, manifests, DVC remote or git until the authors grant written permission.
+citation: S. Kamal Basha and A. Nambiar, S3Simulator, ICPR 2024, LNCS 15316, doi:10.1007/978-3-031-78444-6_15
+contents:
+  files: 17
+  size_mb: 41
+  composition: 11 PNG (sonar, Gazebo and silhouette samples), 1 JPG, 3 OBJ 3D models, 1 generation notebook, README
+  full_dataset_available: false
+notes: The repository holds samples and a generation workflow (Gazebo simulator on Ubuntu, SelfCAD models, SAM silhouettes); the full dataset is not published there.
+sensitivity: low

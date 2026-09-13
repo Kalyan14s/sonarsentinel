@@ -1,0 +1,11 @@
+downloaded_utc: '2026-09-13T11:26:59Z'
+downloaded_by: automated download (R6)
+id: D3
+name: SeabedObjects-KLSG (Ship and Airplane)
+source_url: https://github.com/huoguanying/SeabedObjects-Ship-and-Airplane-dataset.git
+source_commit: 7cc73aa7879074e800510068aaa36c2865615d52
+licence_terms: 'README: academic use only; no LICENSE file'
+citation: Huo, Wu & Li, IEEE Access 8, 2020, doi:10.1109/ACCESS.2020.2978880
+files: 5
+size_bytes: 50101029
+victim_like_files_found: []
