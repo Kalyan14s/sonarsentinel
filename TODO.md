@@ -21,8 +21,8 @@ flowchart LR
     P1 --> P2["Phase 2<br/>Sprint 1 · Ingest & Geo<br/>✅ complete"]
     P2 --> P3["Phase 3<br/>Sprint 2 · Preprocess & Data<br/>✅ complete"]
     P3 --> P4["Phase 4<br/>Sprint 3 · Models & thin slice<br/>✅ complete"]
-    P4 --> P5["Phase 5<br/>Sprint 4 · Scoring, reports, API<br/>M4 · G3 · 🟡 in progress"]
-    P5 --> P6["Phase 6<br/>Sprint 5 · Dashboard<br/>M5 · G4 · P0 freeze"]
+    P4 --> P5["Phase 5<br/>Sprint 4 · Scoring, reports, API<br/>✅ closed · G3 open"]
+    P5 --> P6["Phase 6<br/>Sprint 5 · Dashboard<br/>M5 · G4 · P0 freeze · 🟡 in progress"]
     P6 --> P7["Phase 7<br/>Sprint 6 · Hardening & demo<br/>M6 · G5"]
     P7 --> P8["Phase 8<br/>SIH finale & handover"]
 ```
@@ -34,8 +34,8 @@ flowchart LR
 | [2](#phase-2--sprint-1--ingest--geotagging) | S1 | 09-21 → 09-25 | M1 · G1 | Read sonar logs and place them correctly on a map | 14 | 14 |
 | [3](#phase-3--sprint-2--preprocessing--training-data) | S2 | 09-28 → 10-02 | M2 | Clean, tiled sonar data; training data ready | 12 | 12 |
 | [4](#phase-4--sprint-3--models--thin-slice) | S3 | 10-05 → 10-09 | M3 · G2 | Trained models; CLI report end to end | 16 | 16 |
-| [5](#phase-5--sprint-4--scoring-reports--api) | S4 | 10-12 → 10-16 | M4 · G3 | Trustworthy confidence; reports; upload + jobs API | 42 | 17 |
-| [6](#phase-6--sprint-5--dashboard-p0-freeze) | S5 | 10-19 → 10-23 | M5 · G4 | Live dashboard end to end; P0 freeze | 19 | 0 |
+| [5](#phase-5--sprint-4--scoring-reports--api) | S4 | 10-12 → 10-16 | M4 · G3 | Trustworthy confidence; reports; upload + jobs API | 17 | 17 |
+| [6](#phase-6--sprint-5--dashboard-p0-freeze) | S5 | 10-19 → 10-23 | M5 · G4 | Live dashboard end to end; P0 freeze | 44 | 0 |
 | [7](#phase-7--sprint-6--hardening-validation-edge--demo) | S6 | 10-26 → 10-30 | M6 · G5 | Validated, benchmarked, demo-ready release candidate | 24 | 0 |
 | [8](#phase-8--sih-finale--handover) | — | Proposed Dec 2026 | Finale | Win the demo; hand over cleanly | 11 | 0 |
 | [Continuous](#continuous-tasks-every-sprint) | all | weekly | — | Keep the project healthy | 10 recurring | — |
@@ -222,33 +222,9 @@ flowchart LR
 
 **Dates:** 2026-10-12 → 10-16 · **Milestone:** M4 · **Gate:** G3 (model quality) · **Sprint goal:** trustworthy confidence, reports, upload + jobs API.
 
-> **Status:** 🟡 in progress (started 2026-09-13, [Sprint 4 plan](docs/planning/SPRINT_4_PLAN.md)). Scoring, layback, cross-line clustering, chips, storage, upload API, jobs and the upload screen are built and tested ([TSR-M4](docs/testing/reports/TSR-M4.md)). **Open:** G3 model quality (needs GPU-trained models), ST-051/ST-055, AC-08 (TD-13), the CSV spreadsheet check, and the carried-over people/data items.
-
-### Carried over from Phase 4
-- [ ] Get the team ID from the SIH portal and add it to the deck (team name Vashishta is already on it); re-export the PDF *(moved from Phase 1, 2, 3, then 4)* — R6
-- [ ] Upload the final idea PDF on the SIH portal: deadline 30 Sept *(moved from Phase 1, 2, 3, then 4)* — R6
-- [ ] Send the S3Simulator permission request ([draft](docs/communications/OUTREACH_DRAFTS.md#4-s3simulator-authors--dataset-permission-optional)); its sample files stay local-only until permission is granted *(moved from Phase 1, 2, 3, then 4)* — R1
-- [ ] **ST-010** Download AI4Shipwrecks; convert masks to YOLO-seg — P0 · R1 · 3 pts *(moved from Phase 2, 3, then 4)*. *Converter ready and unit-tested (`ml/datasets/convert_ai4shipwrecks.py`). **Open:** download in a browser from Deep Blue (scripts get HTTP 403), check the mask encoding, run the converter, inspect the overlays*
-- [ ] **ST-011** Mine SSS dataset; MILCO → `cylinder`; review NOMBO — P0 · R1 · 3 pts *(moved from Phase 2, 3, then 4)*. *Converted: 1,170 images, 437 MILCO → `cylinder`, overlays aligned. **Open:** R1 reviews the 231 NOMBO crops in `data/interim/mine_sss/nombo_review.csv`*
-- [ ] **ST-013** ≥ 3 NOAA/USGS XTF surveys incl. ≥ 1 charted wreck, with provenance — P0 · R3 · 3 pts *(moved from Phase 2, 3, then 4)*. *Have 1 survey: 4 USGS Grand Bay 2015 lines (Klein 3900) in DVC with provenance. **Open:** 2 more surveys, a second sonar model, and a survey over a charted wreck (TD-10)*
-- [ ] Freeze API spec and report schema v1.0 (**Gate G1**) — R4, R3 *(moved from Phase 2, 3, then 4)*. *Schema 1.0 is now produced end to end by `sonarsentinel detect` and served by the mock API (ST-087), which settles the mock-server approach. **Open:** team approval, tag `contracts-1.0`*
-- [ ] Answer PRD Q7: datum/CRS for official reports — R3 *(moved from Phase 2, 3, then 4)*. *Proposed: WGS84 geographic ([ADR-015](docs/architecture/08-architecture-decisions.md#adr-015--report-datum-and-crs-wgs84-geographic-prd-q7)); confirm with NIOT*
-- [ ] G1 passed: contracts approved *(M1 exit criterion, moved from Phase 2, 3, then 4)*
-- [ ] **ST-014** CVAT/Label Studio + SAM 2 (not SAM 3); label ≥ 100 real tiles (10% double-labelled) — P0 · R2 · 5 pts *(moved from Phase 3, then 4)*. *Tile source ready: `ml/datasets/xtf_to_tiles.py` writes preprocessed 3-channel 640 px tiles with JSON sidecars. **Open:** set up the labelling tool and label ≥ 100 tiles (people)*
-- [ ] **ST-048** Preprocessing QA notebook: team review — P0 · R2 · 2 pts *(moved from Phase 3, then 4)*. *Notebook, `scripts/preprocess_qa.py` and panels for 3 USGS lines exist. **Open:** team review*
-- [ ] Annotation calibration session (20 shared tiles) and agreement metrics ([Guidelines §9](docs/data/ANNOTATION_GUIDELINES.md#9-quality-control)) — R2 *(moved from Phase 3, then 4)*
-- [ ] Publish dataset manifest `sonar-seg@0.1.0` — R1 *(moved from Phase 3, then 4)*. *Generated: `data/manifests/sonar-seg-0.1.0.json` + `.stats.md`. **Open:** push `data/processed/sonar-seg` to DVC; it covers mine-SSS + synthetic only until ST-010/ST-011 land*
-- [ ] Sprint 2 review: M2 demo with before/after preprocessing visuals — R2 *(moved from Phase 3, then 4)*
-- [ ] M2 exit: preprocessing visually verified (QA notebook reviewed) *(moved from Phase 3, then 4)*
-- [ ] M2 exit: datasets converted; splits pass the leakage check *(moved from Phase 3, then 4; splits pass, AI4Shipwrecks and NOMBO review open)*
-- [ ] **ST-018** Synthetic realism review (100 tiles) — P1 · R2 · 2 pts. *Needs ≥ 70% plausible ratings from team members; tiles ready (ghost net, pipe, cylinder)* *(moved from Phase 4)*
-- [ ] **ST-051** Synthetic data + sonar augmentations; ablation — P0 · R1 · 5 pts. *Ready: `yolo/0.1.0-real_synth` (525 train images incl. 250 synthetic ghost-net tiles / 440 nets; 200-tile holdout), augmentations in `train_detector.py`, evaluation commands in [EXP-20260913-synth](ml/experiments/EXP-20260913-synth.md). **Blocked:** the CPU run was stopped twice for low memory during epoch 2 (trainer peaks ~3.5 GB, other apps hold ~10 GB of 16 GB). **Open:** rerun with ≥ 6 GB free (`--resume` continues from epoch 1) or on a GPU, then fill the ablation table* *(moved from Phase 4)*
-- [ ] Experiment logs for the baseline and synthetic runs ([template](docs/ml/EXPERIMENT_LOG_TEMPLATE.md)) — R1. *Written: [baseline](ml/experiments/EXP-20260913-baseline.md), [PatchCore](ml/experiments/EXP-20260913-patchcore.md), [index](ml/experiments/README.md). **Open:** results for the [synthetic run](ml/experiments/EXP-20260913-synth.md), blocked on ST-051* *(moved from Phase 4)*
-- [ ] Check risk R1 trigger: synthetic ghost-net recall < 0.60 → schedule ST-055 — R1. *Waits for ST-051; the baseline's holdout recall of 0.00 only reflects that it had no ghost-net training data* *(moved from Phase 4)*
+> **✅ Phase 5 closed (2026-09-14).** Scoring with calibrated confidence, chips, layback, cross-line clustering, SQLite storage, upload API, jobs and the upload screen merged to `main` (`21a76c0`), CI green ([TSR-M4](docs/testing/reports/TSR-M4.md)). **Gate G3 is not passed** (CPU-baseline model quality). 25 open items were **carried over to [Phase 6](#phase-6--sprint-5--dashboard-p0-freeze)**: the 20 items from Phase 4, ST-055 (blocked on ST-051), ST-060 (AC-08 needs TD-13), ST-071 (spreadsheet check) and the two M4/G3 exit criteria.
 
 ### Scoring & calibration
-- [ ] **ST-055** Small-object variant (imgsz 1024 / P2) if ghost-net recall is low — P1 · R1 · 5 pts. *Blocked on ST-051: the R1 trigger needs ghost-net recall from the synthetic ablation (GPU or ≥ 6 GB free RAM)*
-- [ ] **ST-060** Shadow consistency score + height estimate — P0 · R1 · 5 pts. *Built: `scoring/shadow.py` (highlight contrast × far-range shadow darkness × coverage, ADR-017) and height `h = Ls·H/(r+Ls)` in `dimensions.height_m`; TC-CONF-004 (object beats shadow-only patch by ≥ 0.3) and TC-CONF-006 (1 m object ± 30%, both sides) pass. **Open:** AC-08 / TC-CONF-005 needs 50 curated shadow/rock false positives (TD-13)*
 - [x] **ST-061** Shape/texture feature extraction — P1 · R1 · 3 pts. *`scoring/features.py`: 36 model, shadow, geometry, edge, texture, context and quality features; deterministic, median < 5 ms per detection (tested); computed for every waterfall detection*
 - [x] **ST-062** LightGBM false-positive filter — P1 · R1 · 3 pts. *`ml/train_fp_filter.py` → `fp_filter/lgbm-fp@0.1.0`: out-of-fold AUROC **0.747** vs 0.692 for the detector score (val, 137 detections / 20 TP); SHAP summary in [EXP-20260913-scoring](ml/experiments/EXP-20260913-scoring.md) (TC-CONF-010). Loaded by the pipeline when `lightgbm` and the model exist; CPU-baseline tooling evidence, refit before G3 (ADR-017 §7)*
 - [x] **ST-063** Fusion + weight tuning — P0 · R1 · 3 pts. *`scoring/fusion.py` (renormalised weighted mean minus penalties) and `ml/tune_fusion.py`: AP fused **0.251** with the configured weights (grid best 0.278) ≥ detector 0.246 on val; configured weights kept (20 TP; shadow side unknown on tiles). TC-CONF-003 passes unit and end to end*
@@ -261,7 +237,6 @@ flowchart LR
 
 ### Reports
 - [x] **ST-070** JSON Schema `report-1.0` + JSON export — P0 · R4 · 3 pts. *Schema and export from Sprint 3; reports from single-line, two-line, image-only and API-job runs validate in the test suite (TC-REP-001, 005, 006, 008). Contract approval stays with Gate G1*
-- [ ] **ST-071** CSV export — P0 · R4 · 1 pt. *23 columns per 06 §3.1 with 6-decimal coordinates, written and read back in the CLI integration test. **Open:** open it in Excel/LibreOffice (manual AC-07 check) and the TD-02 CSV↔JSON comparison*
 - [x] **ST-073** Detection chips with overlays — P0 · R4 · 2 pts. *`report/chips.py`: 256 px PNG per detection with `mask`, `shadow`, `anomaly`, `none` overlays in `results/<survey_id>/chips/`, renamed to final IDs and removed for merged duplicates; `chip_url` filled; TC-REP-009 passes unit and end to end. The chip endpoint is ST-084 (Sprint 5)*
 
 ### Backend
@@ -278,8 +253,6 @@ flowchart LR
 - [x] Update ADRs if model or scoring choices changed — R1. *[ADR-017](docs/architecture/08-architecture-decisions.md#adr-017--sprint-4-scoring-storage-and-job-decisions)*
 
 ### Exit criteria (M4 / G3)
-- [ ] ECE ≤ 0.10; AC-04 passes; JSON/CSV parts of AC-07 pass. *ECE 0.048 on calib (CPU-baseline tooling) ✓; AC-04 confidence range and tiers ✓ (UI slider part in Sprint 5); AC-07 JSON validates ✓, CSV spreadsheet check open*
-- [ ] Model metrics ≥ 80% of PRD targets. ***Not met:** baseline val mAP@50 0.283 vs ≥ 0.56; ghost-net recall not measured (ST-051 blocked); needs GPU-trained models*
 - [x] Upload API and jobs run the real pipeline. *`POST /surveys` → worker → `run_survey` → reports, chips and SQLite rows; tested on synthetic XTF (TC-API-001, 006)*
 
 ---
@@ -287,6 +260,35 @@ flowchart LR
 ## Phase 6 · Sprint 5 — Dashboard (P0 freeze)
 
 **Dates:** 2026-10-19 → 10-23 · **Milestone:** M5 · **Gate:** G4 (P0 complete) · **Sprint goal:** live dashboard end to end.
+
+> **Status:** 🟡 in progress (started 2026-09-14).
+
+### Carried over from Phase 5
+- [ ] Get the team ID from the SIH portal and add it to the deck (team name Vashishta is already on it); re-export the PDF *(moved from Phase 1, 2, 3, 4, then 5)* — R6
+- [ ] Upload the final idea PDF on the SIH portal: deadline 30 Sept *(moved from Phase 1, 2, 3, 4, then 5)* — R6
+- [ ] Send the S3Simulator permission request ([draft](docs/communications/OUTREACH_DRAFTS.md#4-s3simulator-authors--dataset-permission-optional)); its sample files stay local-only until permission is granted *(moved from Phase 1, 2, 3, 4, then 5)* — R1
+- [ ] **ST-010** Download AI4Shipwrecks; convert masks to YOLO-seg — P0 · R1 · 3 pts *(moved from Phase 2, 3, 4, then 5)*. *Converter ready and unit-tested (`ml/datasets/convert_ai4shipwrecks.py`). **Open:** download in a browser from Deep Blue (scripts get HTTP 403), check the mask encoding, run the converter, inspect the overlays*
+- [ ] **ST-011** Mine SSS dataset; MILCO → `cylinder`; review NOMBO — P0 · R1 · 3 pts *(moved from Phase 2, 3, 4, then 5)*. *Converted: 1,170 images, 437 MILCO → `cylinder`, overlays aligned. **Open:** R1 reviews the 231 NOMBO crops in `data/interim/mine_sss/nombo_review.csv`*
+- [ ] **ST-013** ≥ 3 NOAA/USGS XTF surveys incl. ≥ 1 charted wreck, with provenance — P0 · R3 · 3 pts *(moved from Phase 2, 3, 4, then 5)*. *Have 1 survey: 4 USGS Grand Bay 2015 lines (Klein 3900) in DVC with provenance. **Open:** 2 more surveys, a second sonar model, and a survey over a charted wreck (TD-10)*
+- [ ] Freeze API spec and report schema v1.0 (**Gate G1**) — R4, R3 *(moved from Phase 2, 3, 4, then 5)*. *Schema 1.0 is now produced end to end by `sonarsentinel detect` and served by the mock API (ST-087), which settles the mock-server approach. **Open:** team approval, tag `contracts-1.0`*
+- [ ] Answer PRD Q7: datum/CRS for official reports — R3 *(moved from Phase 2, 3, 4, then 5)*. *Proposed: WGS84 geographic ([ADR-015](docs/architecture/08-architecture-decisions.md#adr-015--report-datum-and-crs-wgs84-geographic-prd-q7)); confirm with NIOT*
+- [ ] G1 passed: contracts approved *(M1 exit criterion, moved from Phase 2, 3, 4, then 5)*
+- [ ] **ST-014** CVAT/Label Studio + SAM 2 (not SAM 3); label ≥ 100 real tiles (10% double-labelled) — P0 · R2 · 5 pts *(moved from Phase 3, 4, then 5)*. *Tile source ready: `ml/datasets/xtf_to_tiles.py` writes preprocessed 3-channel 640 px tiles with JSON sidecars. **Open:** set up the labelling tool and label ≥ 100 tiles (people)*
+- [ ] **ST-048** Preprocessing QA notebook: team review — P0 · R2 · 2 pts *(moved from Phase 3, 4, then 5)*. *Notebook, `scripts/preprocess_qa.py` and panels for 3 USGS lines exist. **Open:** team review*
+- [ ] Annotation calibration session (20 shared tiles) and agreement metrics ([Guidelines §9](docs/data/ANNOTATION_GUIDELINES.md#9-quality-control)) — R2 *(moved from Phase 3, 4, then 5)*
+- [ ] Publish dataset manifest `sonar-seg@0.1.0` — R1 *(moved from Phase 3, 4, then 5)*. *Generated: `data/manifests/sonar-seg-0.1.0.json` + `.stats.md`. **Open:** push `data/processed/sonar-seg` to DVC; it covers mine-SSS + synthetic only until ST-010/ST-011 land*
+- [ ] Sprint 2 review: M2 demo with before/after preprocessing visuals — R2 *(moved from Phase 3, 4, then 5)*
+- [ ] M2 exit: preprocessing visually verified (QA notebook reviewed) *(moved from Phase 3, 4, then 5)*
+- [ ] M2 exit: datasets converted; splits pass the leakage check *(moved from Phase 3, 4, then 5; splits pass, AI4Shipwrecks and NOMBO review open)*
+- [ ] **ST-018** Synthetic realism review (100 tiles) — P1 · R2 · 2 pts. *Needs ≥ 70% plausible ratings from team members; tiles ready (ghost net, pipe, cylinder)* *(moved from Phase 4, then 5)*
+- [ ] **ST-051** Synthetic data + sonar augmentations; ablation — P0 · R1 · 5 pts. *Ready: `yolo/0.1.0-real_synth` (525 train images incl. 250 synthetic ghost-net tiles / 440 nets; 200-tile holdout), augmentations in `train_detector.py`, evaluation commands in [EXP-20260913-synth](ml/experiments/EXP-20260913-synth.md). **Blocked:** the CPU run was stopped twice for low memory during epoch 2 (trainer peaks ~3.5 GB, other apps hold ~10 GB of 16 GB). **Open:** rerun with ≥ 6 GB free (`--resume` continues from epoch 1) or on a GPU, then fill the ablation table* *(moved from Phase 4, then 5)*
+- [ ] Experiment logs for the baseline and synthetic runs ([template](docs/ml/EXPERIMENT_LOG_TEMPLATE.md)) — R1. *Written: [baseline](ml/experiments/EXP-20260913-baseline.md), [PatchCore](ml/experiments/EXP-20260913-patchcore.md), [index](ml/experiments/README.md). **Open:** results for the [synthetic run](ml/experiments/EXP-20260913-synth.md), blocked on ST-051* *(moved from Phase 4, then 5)*
+- [ ] Check risk R1 trigger: synthetic ghost-net recall < 0.60 → schedule ST-055 — R1. *Waits for ST-051; the baseline's holdout recall of 0.00 only reflects that it had no ghost-net training data* *(moved from Phase 4, then 5)*
+- [ ] **ST-055** Small-object variant (imgsz 1024 / P2) if ghost-net recall is low — P1 · R1 · 5 pts. *Blocked on ST-051: the R1 trigger needs ghost-net recall from the synthetic ablation (GPU or ≥ 6 GB free RAM)* *(moved from Phase 5)*
+- [ ] **ST-060** Shadow consistency score + height estimate — P0 · R1 · 5 pts. *Built: `scoring/shadow.py` (highlight contrast × far-range shadow darkness × coverage, ADR-017) and height `h = Ls·H/(r+Ls)` in `dimensions.height_m`; TC-CONF-004 (object beats shadow-only patch by ≥ 0.3) and TC-CONF-006 (1 m object ± 30%, both sides) pass. **Open:** AC-08 / TC-CONF-005 needs 50 curated shadow/rock false positives (TD-13)* *(moved from Phase 5)*
+- [ ] **ST-071** CSV export — P0 · R4 · 1 pt. *23 columns per 06 §3.1 with 6-decimal coordinates, written and read back in the CLI integration test. **Open:** open it in Excel/LibreOffice (manual AC-07 check) and the TD-02 CSV↔JSON comparison* *(moved from Phase 5)*
+- [ ] M4 exit: ECE ≤ 0.10; AC-04 passes; JSON/CSV parts of AC-07 pass. *ECE 0.048 on calib (CPU-baseline tooling) ✓; AC-04 confidence range and tiers ✓ (UI slider part in Sprint 5); AC-07 JSON validates ✓, CSV spreadsheet check open* *(moved from Phase 5)*
+- [ ] M4/G3 exit: model metrics ≥ 80% of PRD targets. ***Not met:** baseline val mAP@50 0.283 vs ≥ 0.56; ghost-net recall not measured (ST-051 blocked); needs GPU-trained models* *(moved from Phase 5)*
 
 ### Backend
 - [ ] **ST-083** WebSocket events with `seq` and replay — P0 · R4 · 5 pts
