@@ -30,7 +30,7 @@
 | TC-USE-001/002 | 2 | 0 | — | — | Needs ≥ 3 new users |
 | Backend unit + integration (pytest) | — | 396 | 396 | 0 | CI-equivalent venv: 391 passed, 3 skipped (torch/ultralytics) |
 | ML tooling (pytest) | — | 28 | 28 | 0 | — |
-| Frontend (Vitest) | — | 69 | 69 | 0 | One test failed once while the backend suite was loading the CPU and passed on rerun (timing-sensitive; watch in CI) |
+| Frontend (Vitest) | — | 69 | 69 | 0 | The keyboard review test failed intermittently (locally under load and once in CI): a real defect, since the review page's key listener could stay stale right after the queue loaded. Fixed with a single listener that calls the latest handler; 5 consecutive local runs pass |
 
 Static checks: ruff lint and format clean; strict mypy clean on 71 source files; frontend lint, typecheck and production build pass (JS bundle 463 kB, 142 kB gzip); documentation check 0 problems; pre-commit clean.
 
@@ -46,7 +46,7 @@ Static checks: ruff lint and format clean; strict mypy clean on 71 source files;
 | TC-SEC-001 | Pass | `test_security.py`: `../../evil.xtf` and `..\..\evil.xtf` stored only as `uploads/<survey>/evil.xtf` |
 | TC-SEC-002 | Pass | PNG renamed `.xtf` rejected with 422 `CORRUPT_HEADER` (magic-byte check) |
 | TC-SEC-003 | Pass | Over-limit upload returns 413; nothing beyond the limit written (test client sends one chunk, so a partial network stream is not simulated) |
-| TC-SEC-004 | Pass (local) / CI | `npm audit`: 0 vulnerabilities after upgrades. `pip-audit` baseline in the [dependency scan](SECURITY_SCAN_2026-09-14.md): GDAL 3.12.3 (conda, unreachable HDF4/netCDF drivers) and diskcache (DVC tooling only) accepted for development. CI `security` job gates on pip-audit and `npm audit --audit-level=critical`; `docker` job runs Trivy on both images, failing on critical |
+| TC-SEC-004 | Pass (local) / CI | `npm audit`: 0 vulnerabilities after upgrades. `pip-audit` baseline in the [dependency scan](SECURITY_SCAN_2026-09-14.md): GDAL 3.12.3 (conda, unreachable HDF4/netCDF drivers) and diskcache (DVC tooling only) accepted for development. CI `security` job gates on pip-audit and `npm audit --audit-level=critical`. Trivy (CI run 34783898798, `504dafb`): **0 critical** in both images after adding `apt-get upgrade` / `apk upgrade` (the unpatched `nginx:1.27-alpine` base had critical OpenSSL CVE-2026-31789); backend **4 high, fix available**: `wheel` 0.45.1, `setuptools` 70.3.0 and `jaraco.context` 5.3.0 (packaging tools in the image), `msgpack` 1.1.2 — to upgrade or remove from the runtime image (D-M6-08) |
 | TC-SEC-005 | Partial | `serve` defaults to 127.0.0.1; Compose ports bound to 127.0.0.1; LAN scan not run |
 | TC-SEC-006 | Not run | Needs network monitoring during an offline AC-01 run |
 | TC-EDGE-003 | Pass | `test_watch.py`: file processed once after its size is stable, state survives restart, report and `SS1|…` alert lines ≤ 256 bytes written |
@@ -96,6 +96,7 @@ Static checks: ruff lint and format clean; strict mypy clean on 71 source files;
 | D-M6-05 | S3 | Health `runtime` can report `cuda` while `sonarsentinel detect` builds the YOLO detector on CPU; the ONNX session is loaded several times in one run | R4, R6 |
 | D-M6-06 | S4 | Settings: coordinate format (DD/DMS) is saved but not applied to the display; Re-run only pre-fills the survey name | R5 |
 | D-M6-07 | S4 | Documentation inconsistencies found by the report draft: split ratios (70/15/15 vs. 70/10/5/15) and demo water depth (~2 vs. ~3 m) | R6 |
+| D-M6-08 | S3 | Backend image carries 4 high-severity findings with fixes available (`wheel`, `setuptools`, `jaraco.context`, `msgpack`); not gating (critical only) | R6 |
 | D-M5-02…04, D-M4-03 | S3 | Still open from TSR-M5 (multi-line mosaic, cancelled-job report, undo of reclassify, double validation upload) | R3, R4, R5 |
 
 ## 6. Waivers and limitations

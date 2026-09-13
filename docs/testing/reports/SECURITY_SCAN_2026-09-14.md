@@ -6,7 +6,7 @@ Part of TC-SEC-004 ([Test Cases](../TEST_CASES.md)); the post-upgrade state and 
 |---|---|---|---|
 | Python | `pip-audit` 2.10.1 | Development conda environment `sonarsentinel` (202 packages) | 12 advisories in 2 packages |
 | JavaScript | `npm audit` (npm 10.9.3) | `frontend/` lockfile | 7 packages: 1 critical, 1 high, 5 moderate |
-| Container images | Trivy | Backend and frontend images | Not run locally (no Docker); added to CI in Sprint 6 |
+| Container images | Trivy (CI, `aquasecurity/trivy-action` v0.36.0) | Backend and frontend images | First scan: critical OpenSSL CVE-2026-31789 in the frontend base image and base-package findings in the backend; after OS package upgrades **0 critical**, 4 high in backend Python packaging tools and `msgpack` ([TSR-M6](TSR-M6.md)) |
 
 ## Python
 

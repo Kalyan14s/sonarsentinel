@@ -311,7 +311,7 @@ flowchart LR
 - [x] **ST-114** Verify User Manual and Runbook against the implementation — P0 · R6 · 2 pts. *User Manual (review queue, history/settings, CLI output layout, watch mode, unsupported formats, dropped waterfall), Operations Runbook (data folder layout, `SS_*` table, Compose/GPU/edge, smoke test with demo A3, cleanup, playbooks) and Developer Setup (serve/mock, CLI, frontend checks, Docker) updated; screenshots carried separately*
 
 ### Other tasks
-- [x] Test Summary Report `TSR-M6` with go/no-go — R6. *[TSR-M6](docs/testing/reports/TSR-M6.md): **G5 No-go**; M6 engineering scope Go; defects D-M6-01…07 and waivers recorded*
+- [x] Test Summary Report `TSR-M6` with go/no-go — R6. *[TSR-M6](docs/testing/reports/TSR-M6.md): **G5 No-go**; M6 engineering scope Go; defects D-M6-01…08 and waivers recorded; CI green including Docker build, smoke test and Trivy gate (0 critical)*
 - [x] Run `scripts/docs/verify_docs.ps1`: zero problems — R6. *0 problems on 2026-09-14 after the Sprint 6 documents*
 
 ### Exit criteria (M6 / G5)
