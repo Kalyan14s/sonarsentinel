@@ -48,16 +48,20 @@ class SonarInfo:
     channel_layout: Literal["port_stbd", "port_only", "stbd_only"]
 
 @dataclass
-class SonarLog:
+class SonarLog:                    # contract 1.0: backend/sonarsentinel/ingest/models.py
     source_file: str
     source_format: Literal["xtf", "jsf", "sl2", "sl3", "geotiff", "image_nav", "image_only"]
-    port: np.ndarray | None        # (n_pings, n_samples), sample 0 = nearest to nadir
-    starboard: np.ndarray | None   # (n_pings, n_samples)
-    nav: pd.DataFrame              # one row per ping, columns below; NaN allowed
     sonar: SonarInfo
+    nav: pd.DataFrame              # one row per ping, columns below; NaN allowed
+    port: np.ndarray | None = None       # (n_pings, n_samples), sample 0 = nearest to nadir
+    starboard: np.ndarray | None = None  # (n_pings, n_samples), may be a numpy.memmap
+    image: np.ndarray | None = None      # GeoTIFF band 1, or the waterfall image as read
+    ground_range_corrected: bool = False # across-track samples already ground range
     crs_hint: str | None = None    # e.g. "EPSG:4326", "EPSG:32644"
-    geotransform: tuple | None = None   # GeoTIFF only
+    geotransform: tuple | None = None   # GDAL order, GeoTIFF only
     warnings: list[str] = field(default_factory=list)
+    # reader warnings: TRUNCATED_FILE, NO_NAVIGATION, NOT_GEOTAGGED, GPS_INTERPOLATED,
+    # HEADING_FROM_COG, SHIP_POSITION_ONLY, PORT_ORDER_ASSUMED
 
 NAV_COLUMNS = [
     "ping", "time_utc", "lat", "lon", "heading_deg", "altitude_m", "sensor_depth_m",
@@ -110,6 +114,13 @@ class Detection:
 | `jsf_reader`, `sl_reader` (P1) | custom / `sllib` | Same `SonarLog` output |
 
 Large files are read **ping-by-ping into memory-mapped arrays** so the whole file never has to sit in RAM.
+
+**XTF details (implemented in Sprint 1):**
+- Two passes: a header-only scan indexes complete sonar pings (a partial last packet gives `TRUNCATED_FILE`), then samples are copied into `numpy` arrays or `.npy` memmaps (`work_dir`). Chunks are views over those arrays (`ingest/chunking.py`).
+- Channels: first port/starboard pair from `ChanInfo.TypeOfChannel`, or indices 0/1 when types are unset; `channels=(2, 3)` selects another pair (e.g. high frequency).
+- Port sample order: the XTF specification reverses odd-numbered side-scan channels, so port is stored far range first (confirmed on USGS Klein 3900 files). The reader detects the order by correlating the port and starboard range profiles, which works in both deep water (dark nadir band) and shallow water (bright nadir). It falls back to far-first with `PORT_ORDER_ASSUMED` when the evidence is weak; `port_order` overrides it. **Confirm on each new sonar model** (TC-ING-006).
+- Altitude: `SensorPrimaryAltitude` can be wrong (the Grand Bay files record 1–74 m in ~3 m of water), so S3 bottom tracking must check it against the data.
+- Navigation: `SensorX/Ycoordinate`, falling back per ping to `ShipX/Ycoordinate` (`SHIP_POSITION_ONLY`); (0, 0) fixes become NaN; `NavUnits` 0 requires an EPSG code (`CRS_REQUIRED`); `SensorSpeed` knots → m/s; zero altitude → NaN.
 
 ### S2 · Navigation cleaning
 1. **Units/CRS**: `NavUnits` header + value-range check; convert projected coordinates to WGS84 (`pyproj`); user UTM override.

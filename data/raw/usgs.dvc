@@ -1,0 +1,6 @@
+outs:
+- md5: a1a170652af690c0ff56fe9aa3ee4f8a.dir
+  size: 65243272
+  nfiles: 6
+  hash: md5
+  path: usgs

@@ -1,0 +1,83 @@
+{
+  "report_version": "1.0",
+  "generated_utc": "2026-09-13T10:42:18Z",
+  "survey": {
+    "survey_id": "SRV-20260913-001",
+    "name": "Chennai-Port-Line07",
+    "project": "NIOT-Cleanup-2026",
+    "source_files": ["line_07.xtf"],
+    "source_format": "xtf",
+    "sonar": { "make": "EdgeTech", "model": "4200", "frequency_khz": 600, "range_m": 50 },
+    "start_utc": "2026-09-12T05:10:02Z",
+    "end_utc": "2026-09-12T05:19:52Z",
+    "track_length_km": 1.18,
+    "area_covered_km2": 0.118,
+    "datum": "WGS84",
+    "ground_resolution_m": 0.1,
+    "bbox": [80.3071, 13.0802, 80.3189, 13.0875]
+  },
+  "processing": {
+    "pipeline_version": "0.3.0",
+    "models": {
+      "detector": "yolo11s-seg-sonar@1.2.0",
+      "anomaly": "patchcore-seafloor@1.0.0",
+      "fp_filter": "lgbm-fp@1.1.0",
+      "calibrator": "isotonic@1.1.0"
+    },
+    "config_hash": "sha256:9c1e4f",
+    "runtime": "tensorrt-fp16",
+    "duration_s": 48.6,
+    "quality": {
+      "dropout_pings": 212,
+      "high_motion_pings": 540,
+      "bottom_tracked": false,
+      "layback_estimated": false,
+      "warnings": ["DROPOUT", "HIGH_MOTION"]
+    }
+  },
+  "summary": {
+    "total_detections": 1,
+    "by_class": { "ghost_net": 1 },
+    "by_tier": { "hazard": 1 }
+  },
+  "detections": [
+    {
+      "detection_id": "SRV-20260913-001-D0003",
+      "class": "ghost_net",
+      "confidence": 87.4,
+      "alert_tier": "hazard",
+      "position": { "lat": 13.08412, "lon": 80.31275, "depth_m": 18.5, "uncertainty_m": 4.2 },
+      "footprint": [
+        [13.084141, 80.312722],
+        [13.084146, 80.312779],
+        [13.084099, 80.312778],
+        [13.084094, 80.312721]
+      ],
+      "dimensions": { "length_m": 6.2, "width_m": 3.1, "area_m2": 14.8, "height_m": 0.4 },
+      "orientation_deg": 12.0,
+      "sonar_ref": {
+        "source_file": "line_07.xtf",
+        "side": "starboard",
+        "ping_start": 10398,
+        "ping_end": 10466,
+        "ground_range_m": 23.7,
+        "time_utc": "2026-09-12T05:17:21Z"
+      },
+      "scores": {
+        "detector": 0.81,
+        "anomaly": 0.92,
+        "shadow": 0.64,
+        "fp_filter": 0.88,
+        "persistence": 0.5,
+        "dropout_penalty": 0.0,
+        "motion_penalty": 0.0,
+        "fused": 0.78
+      },
+      "quality_flags": [],
+      "n_views": 1,
+      "review": { "status": "pending", "reviewer": null, "reject_reason": null, "note": null, "updated_utc": null },
+      "model_version": "yolo11s-seg-sonar@1.2.0",
+      "chip_url": "/api/v1/detections/SRV-20260913-001-D0003/chip.png"
+    }
+  ]
+}

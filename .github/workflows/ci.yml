@@ -22,8 +22,8 @@ jobs:
           python-version: "3.11"
           cache: pip
           cache-dependency-path: backend/pyproject.toml
-      - name: Install package with dev extras
-        run: pip install -e ".[dev]"
+      - name: Install package with dev and geo extras
+        run: pip install -e ".[dev,geo]"
       - name: Ruff lint
         run: ruff check .
       - name: Ruff format check
@@ -32,6 +32,8 @@ jobs:
         run: mypy
       - name: Pytest with coverage
         run: pytest --cov=sonarsentinel --cov-report=term-missing
+      - name: Dataset script tests
+        run: pytest -q ../ml/tests
       - name: CLI smoke test
         run: sonarsentinel --help
 
@@ -91,5 +93,5 @@ jobs:
       - name: Install package and run tests
         working-directory: backend
         run: |
-          pip install -e ".[dev]"
+          pip install -e ".[dev,geo]"
           pytest -q

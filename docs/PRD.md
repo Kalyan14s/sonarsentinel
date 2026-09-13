@@ -474,7 +474,7 @@ Full schemas: [architecture/06-data-models.md](architecture/06-data-models.md).
 | Q4 | Target edge hardware (Jetson model, Intel NUC, AUV payload computer)? | Edge lead | M5 |
 | Q5 | Is class taxonomy sufficient, or are more classes needed (e.g. anchors, containers, aircraft)? | ML lead | M2 |
 | Q6 | Can we obtain real ghost-net SSS samples (GhostNetZero/WWF, MARELITT, NIOT)? | PM | M3 |
-| Q7 | Required datum/CRS for official reports (WGS84 assumed)? | Geo engineer | M1 |
+| Q7 | Required datum/CRS for official reports (WGS84 assumed)? *Proposed answer: WGS84 geographic, see [ADR-015](architecture/08-architecture-decisions.md#adr-015--report-datum-and-crs-wgs84-geographic-prd-q7); confirm with NIOT* | Geo engineer | M1 |
 
 ---
 

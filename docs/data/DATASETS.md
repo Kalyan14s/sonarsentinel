@@ -52,7 +52,7 @@ The pipeline **trains on the first kind and runs on the second**, computing GPS 
 - **Format:** `.jpg` images and `.txt` annotation files.
 - **Citation:** N. Pessanha Santos, R. Moura, G. Sampaio Torgal, V. Lobo, and M. de Castro Neto, "Side-scan sonar imaging data of underwater vehicles for mine detection," *Data in Brief*, vol. 53, Art. no. 110132, 2024, doi: 10.1016/j.dib.2024.110132.
 - **Licence:** ✅ **CC BY 4.0** (Figshare record v2, 2024-01-17). Attribution required; commercial use and redistribution allowed.
-- **Our handling:** verify the annotation format on download (inspect a few files and the paper); MILCO → `cylinder`. NOMBO objects are **reviewed manually**: clearly man-made → `debris_other`; natural or ambiguous → hard negatives. Group splits by survey date/mission where identifiable.
+- **Our handling:** annotation format verified 2026-09-13: YOLO boxes (`class xc yc w h`, normalised; `obj.names`: 0 = MILCO, 1 = NOMBO), one zip per year, 866 of 1,170 images without objects. Converted by `ml/datasets/convert_mine_sss.py`; object-free images also feed the normal seafloor pool (`build_normal_pool.py`). MILCO → `cylinder`. NOMBO objects are **reviewed manually**: clearly man-made → `debris_other`; natural or ambiguous → hard negatives. Group splits by survey date/mission where identifiable.
 - **Caveats:** military mine-like shapes; very high frequency (fine detail); domain differs from lower-frequency survey sonars.
 
 ### D3 · SeabedObjects-KLSG
@@ -60,7 +60,7 @@ The pipeline **trains on the first kind and runs on the second**, computing GPS 
 - **Content:** SSS image crops of wrecks, airplanes, mines, drowning victims and seafloor. Real images contributed by several sonar manufacturers and survey companies.
 - **Citation:** G. Huo, Z. Wu, and J. Li, "Underwater object classification in sidescan sonar images using deep transfer learning and semisynthetic training data," *IEEE Access*, vol. 8, pp. 47407–47418, 2020, doi: 10.1109/ACCESS.2020.2978880.
 - **Licence:** ⚠ `huoguanying` repository: README states it "can be used for academic purpose"; no LICENSE file, so **academic research only**, no redistribution, not in commercial models. ❌ The `HHUCzCz` KLSG-II repository has **no licence or terms** (one sample image only), so it is **not used**.
-- **Our handling:** **seafloor** images → normal pool for PatchCore and background tiles. Ship/airplane crops → auxiliary classification checks and optional `shipwreck`/`debris_other` box labels (drawn by us).
+- **Our handling:** **seafloor** images → normal pool for PatchCore and background tiles. ⚠ The public `huoguanying` repository (commit `7cc73aa`) contains only ship and airplane crops, not the seafloor, mine or victim images described in the paper, so the normal pool is built from object-free D2 images instead (2026-09-13). Ship/airplane crops → auxiliary classification checks and optional `shipwreck`/`debris_other` box labels (drawn by us).
 - **⚠ Ethics:** the **drowning-victim images are excluded** from training, demos and screenshots (see [Data Management Plan §7](DATA_MANAGEMENT_PLAN.md#7-sensitive-data-and-ethics)).
 
 ### D4 · S3Simulator

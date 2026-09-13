@@ -17,8 +17,8 @@ The single checklist for the whole project, from documentation to hackathon fina
 
 ```mermaid
 flowchart LR
-    P0["Phase 0<br/>Docs & design<br/>✅ complete"] --> P1["Phase 1<br/>Sprint 0 · Setup<br/>M0 · IS idea PDF"]
-    P1 --> P2["Phase 2<br/>Sprint 1 · Ingest & Geo<br/>M1 · G1"]
+    P0["Phase 0<br/>Docs & design<br/>✅ complete"] --> P1["Phase 1<br/>Sprint 0 · Setup<br/>✅ complete"]
+    P1 --> P2["Phase 2<br/>Sprint 1 · Ingest & Geo<br/>🟡 in progress"]
     P2 --> P3["Phase 3<br/>Sprint 2 · Preprocess & Data<br/>M2"]
     P3 --> P4["Phase 4<br/>Sprint 3 · Models & thin slice<br/>M3 · G2"]
     P4 --> P5["Phase 5<br/>Sprint 4 · Scoring, reports, API<br/>M4 · G3"]
@@ -30,8 +30,8 @@ flowchart LR
 | Phase | Sprint | Dates (illustrative) | Milestone / gate | Goal | Items | Done |
 |---|---|---|---|---|---|---|
 | [0](#phase-0--documentation--design) | — | → 2026-09-13 | Docs baseline | Complete, verified documentation | 20 | 20 |
-| [1](#phase-1--sprint-0--project-setup) | S0 | 09-14 → 09-18 | M0 · IS (idea PDF due 09-30) | Team can build, test, collaborate; SIH idea submitted | 28 | 25 |
-| [2](#phase-2--sprint-1--ingest--geotagging) | S1 | 09-21 → 09-25 | M1 · G1 | Read sonar logs and place them correctly on a map | 20 | 0 |
+| [1](#phase-1--sprint-0--project-setup) | S0 | 09-14 → 09-18 | M0 · IS (idea PDF due 09-30) | Team can build, test, collaborate; SIH idea submitted | 25 | 25 |
+| [2](#phase-2--sprint-1--ingest--geotagging) | S1 | 09-21 → 09-25 | M1 · G1 | Read sonar logs and place them correctly on a map | 23 | 12 |
 | [3](#phase-3--sprint-2--preprocessing--training-data) | S2 | 09-28 → 10-02 | M2 | Clean, tiled sonar data; training data ready | 19 | 0 |
 | [4](#phase-4--sprint-3--models--thin-slice) | S3 | 10-05 → 10-09 | M3 · G2 | Trained models; CLI report end to end | 20 | 0 |
 | [5](#phase-5--sprint-4--scoring-reports--api) | S4 | 10-12 → 10-16 | M4 · G3 | Trustworthy confidence; reports; upload + jobs API | 22 | 0 |
@@ -79,15 +79,13 @@ flowchart LR
 
 **Dates:** 2026-09-14 → 09-18 · **Milestone:** M0 · **Sprint goal:** everyone can build, test and collaborate; datasets are downloading.
 
-> **Status 2026-09-13: 25 of 28 done, not yet complete.** Repository https://github.com/Kalyan14s/sonarsentinel (public, protected `main`, CI green on Ubuntu and Windows), 91 backlog issues, datasets in DVC, idea deck with team name. **Three items remain, all needing the team:** ① team ID from the SIH portal · ② upload the final idea PDF · ③ send the S3Simulator permission request.
+> **✅ Phase 1 complete (2026-09-13), closed by the team lead.** Repository https://github.com/Kalyan14s/sonarsentinel (public, protected `main`, CI green on Ubuntu and Windows), 91 backlog issues, datasets in DVC, idea deck with team name. Three open team items were **carried over to [Phase 2](#phase-2--sprint-1--ingest--geotagging)**: team ID, idea PDF upload, S3Simulator permission request.
 
 ### SIH 2026 idea submission (deadline-critical)
 - [x] Confirm the idea-submission deadline with the college SPOC (official guidelines say **30 Sept 2026**; an older PDF says 15 Sept). *Confirmed by the team lead, 2026-09-13* — R6
 - [x] Check team composition: exactly 6 members, ≥ 1 female member, same college; unique team name without the institute's name. *Confirmed by the team lead, 2026-09-13* — R6
 - [x] Take part in the college internal hackathon; SPOC nominates the team on the portal. *Confirmed by the team lead, 2026-09-13* — all
-- [ ] Fill in team name, team ID and member names (deck title slide + private contact sheet, **not** in the repo) *(moved from Phase 0)* — R6. *Team name **Vashishta** added to the deck (title slide and team badge on every slide) ✅; member names received (6) but deliberately **not** stored in this public repo, so keep them in the team's private contact sheet; **team ID still needed** (from the SIH portal)*
 - [x] Build the idea deck on the [official 2026 template](docs/hackathon/SIH_PRESENTATION.md#part-a--idea-submission-deck-6-slides): ≤ 6 slides, headings unchanged, required footer. **Draft ready:** [PDF](docs/hackathon/idea-deck/SonarSentinel_SIH2026_Idea_DRAFT.pdf) · [PowerPoint](docs/hackathon/idea-deck/SonarSentinel_SIH2026_Idea_DRAFT.pptx); fill in team name/ID and review before upload — R6, R5
-- [ ] Export to **PDF** and upload through the team leader's portal login: target 25 Sept, deadline 30 Sept. *(Draft PDF exported; final export after team details, then upload)* — R6
 
 ### Environment & repository
 - [x] Move the working copy to a local, non-OneDrive path: **`C:\dev\sonarsentinel`** (OneDrive folder kept as a backup) — R6 ([why](docs/guides/DEVELOPER_SETUP.md#-windows-notes))
@@ -107,7 +105,6 @@ flowchart LR
 - [x] Send data request to NIOT: sample logs, sonar models, edge hardware (PRD Q1, Q2, Q4). *Sent (confirmed by the team lead, 2026-09-13); awaiting reply, see the [outreach tracker](docs/communications/OUTREACH_DRAFTS.md#7-outreach-tracker)* — R6
 - [x] Contact WWF / GhostNetZero for ghost-net sample access (PRD Q6). *Sent (confirmed by the team lead, 2026-09-13); awaiting reply* — R6
 - [x] Record the AI4Shipwrecks licence in `ml/datasets/LICENSES.md` and [Licences §3](docs/legal/LICENSES_AND_COMPLIANCE.md#3-datasets-and-data-sources): **CC BY 4.0**, read from the Deep Blue record (`rights_license`) on 2026-09-13 — R1
-- [ ] Ask the S3Simulator authors for written permission to use the dataset (no licence published). **Required, since the team wants to use it.** *Drafted: [Outreach §4](docs/communications/OUTREACH_DRAFTS.md#4-s3simulator-authors--dataset-permission-optional). Status: the repository's sample files (11 images, 3 3D models, generation notebook; 41 MB) are downloaded to `data/raw/s3simulator` for private local evaluation only. The full dataset isn't published in the repository. Not used for training and not in DVC or git until permission is granted* — R1
 
 ### Team
 - [x] Assign roles R1–R6 to people; schedule ceremonies and mentor sync ([Plan §7](docs/planning/PROJECT_PLAN.md#7-ceremonies-and-communication)). *Confirmed by the team lead, 2026-09-13* — R6
@@ -125,34 +122,41 @@ flowchart LR
 
 **Dates:** 2026-09-21 → 09-25 · **Milestone:** M1 · **Gate:** G1 (contracts) · **Sprint goal:** read sonar logs and put them on the map with correct GPS.
 
+> **Status:** 🟡 started 2026-09-13, ahead of the planned dates. Work happens on branch `sprint-1/ingest-geo` and merges into `main` through a pull request with passing CI.
+
+### Carried over from Phase 1
+- [ ] Get the team ID from the SIH portal and add it to the deck (team name Vashishta is already on it); re-export the PDF *(moved from Phase 1)* — R6
+- [ ] Upload the final idea PDF on the SIH portal: deadline 30 Sept *(moved from Phase 1)* — R6
+- [ ] Send the S3Simulator permission request ([draft](docs/communications/OUTREACH_DRAFTS.md#4-s3simulator-authors--dataset-permission-optional)); its sample files stay local-only until permission is granted *(moved from Phase 1)* — R1
+
 ### Data
-- [ ] **ST-010** Download AI4Shipwrecks; convert masks to YOLO-seg — P0 · R1 · 3 pts
-- [ ] **ST-011** Mine SSS dataset; MILCO → `cylinder`; review NOMBO — P0 · R1 · 3 pts
-- [ ] **ST-012** SeabedObjects-KLSG; build normal seafloor pool (exclude victim images) — P0 · R1 · 2 pts
-- [ ] **ST-013** ≥ 3 NOAA/USGS XTF surveys incl. ≥ 1 charted wreck, with provenance — P0 · R3 · 3 pts
+- [ ] **ST-010** Download AI4Shipwrecks; convert masks to YOLO-seg — P0 · R1 · 3 pts. *Converter ready and unit-tested (`ml/datasets/convert_ai4shipwrecks.py`, writes 20 QA overlays). **Open:** download in a browser from Deep Blue (scripts get HTTP 403), check the mask encoding, run the converter, inspect the overlays*
+- [ ] **ST-011** Mine SSS dataset; MILCO → `cylinder`; review NOMBO — P0 · R1 · 3 pts. *Converted with `ml/datasets/convert_mine_sss.py`: 1,170 images, 437 MILCO → `cylinder` polygons, 866 object-free images; labels are YOLO boxes (`0` MILCO, `1` NOMBO), verified; overlays spot-checked and aligned. **Open:** R1 reviews the 231 NOMBO crops in `data/interim/mine_sss/nombo_review.csv` (`debris_other` or background)*
+- [x] **ST-012** Normal seafloor pool (victim images excluded) — P0 · R1 · 2 pts. *1,687 tiles of 256 px (≥ 500 required) from 866 object-free mine-SSS images, 2010/2015/2017/2018 missions; contact sheet spot-checked. **Source change:** the public KLSG repository we downloaded has only ship and airplane crops, no seafloor images, so the pool uses D2 (CC BY 4.0). Built by `ml/datasets/build_normal_pool.py` into `data/processed/anomaly/normal/`*
+- [ ] **ST-013** ≥ 3 NOAA/USGS XTF surveys incl. ≥ 1 charted wreck, with provenance — P0 · R3 · 3 pts. *Search 2026-09-13: NCEI NOS survey folders have no raw side-scan data; NOAA InPort 47922 (Hudson River) only has a dead FTP link. **Downloaded:** 4 lines (65 MB) of USGS Grand Bay 2015 (doi:10.5066/P9374DKQ, Klein 3900, public domain) via HTTP range requests from the 9.84 GB release zip, with `data/raw/usgs.PROVENANCE.yaml` and DVC. **Open:** 2 more surveys, a second sonar model and a survey over a charted wreck (TD-10); options are NOAA OCM for the Hudson River link, NCEI archive accessions, or ScienceBase releases*
 
 ### Ingestion
-- [ ] **ST-020** `SonarLog` data contract, validators, error types — P0 · R2 · 3 pts
-- [ ] **ST-021** XTF reader: channels, per-ping navigation, units — P0 · R2 · 5 pts
-- [ ] **ST-022** GeoTIFF reader with CRS/transform — P0 · R3 · 2 pts
-- [ ] **ST-023** Image + navigation CSV reader — P0 · R2 · 3 pts
-- [ ] **ST-024** Image-only path with `NOT_GEOTAGGED` — P0 · R2 · 1 pt
-- [ ] **ST-026** Memory-mapped chunked reading of large XTF — P0 · R4 · 3 pts
+- [x] **ST-020** `SonarLog` data contract, validators, error types — P0 · R2 · 3 pts. *Contract 1.0 in `ingest/models.py` (adds `image`, `ground_range_corrected` and warning codes); TC-ING-001…004 automated*
+- [x] **ST-021** XTF reader: channels, per-ping navigation, units — P0 · R2 · 5 pts. *`ingest/xtf_reader.py`: exact on synthetic TD-01 (TC-ING-005, 007, 008, 012). **Real files:** 4 USGS Grand Bay Klein 3900 lines parse without errors. On 10 pings per file, lat/lon, heading, slant range and samples are identical to pyxtf's independent packet parser (used as the reference instead of a vendor viewer; TC-ING-006). Tracks fall inside the survey's metadata bounding box. The files store port far range first; the first detector guessed wrong on 3 of 4 lines, so detection now correlates the port and starboard range profiles. **Found:** altitude values in these files are implausible (1–74 m in a ~3 m deep estuary), so bottom tracking (ST-040) is needed for them*
+- [x] **ST-022** GeoTIFF reader with CRS/transform — P0 · R3 · 2 pts. *`ingest/geotiff_reader.py` + `raster_pixels_to_latlon`: 5 pixels match rasterio's pixel centres (same GDAL geotransform as QGIS) to < 1 µm; missing CRS raises `CRS_REQUIRED` (TC-ING-009)*
+- [x] **ST-023** Image + navigation CSV reader — P0 · R2 · 3 pts. *Template columns, lat/lon or easting/northing + EPSG, circular heading interpolation, `GPS_INTERPOLATED` and `HEADING_FROM_COG` (TC-ING-004, 010)*
+- [x] **ST-024** Image-only path with `NOT_GEOTAGGED` — P0 · R2 · 1 pt. *Reader flags `NOT_GEOTAGGED` (TC-ING-011 reader part). The CLI/API require `allow_no_gps`, and report schema 1.0 enforces null lat/lon + `pixel_bbox`. The end-to-end report check stays in TC-E2E-003*
+- [x] **ST-026** Memory-mapped chunked reading of large XTF — P0 · R4 · 3 pts. *Two-pass reader into `.npy` memmaps plus overlapping chunk views (`ingest/chunking.py`). `scripts/bench_xtf_memory.py` on a 2.0 GB synthetic XTF (53,176 pings × 2 × 10,000 samples): read in 6 s, peak private memory 91 MB, peak working set 2.1 GB (mostly reclaimable mapped file pages), well under 8 GB. Measured on Windows 11, 2026-09-13*
 
 ### Geotagging
-- [ ] **ST-030** Units/CRS detection; UTM ↔ WGS84; EPSG override — P0 · R3 · 2 pts
-- [ ] **ST-031** `pixel_to_latlon` + golden tests — P0 · R3 · 3 pts
+- [x] **ST-030** Units/CRS detection; UTM ↔ WGS84; EPSG override — P0 · R3 · 2 pts. *`geo/units.py`; degree and UTM copies of one track agree < 0.1 m for track and target positions (TC-ING-007, 008); override via `--utm-epsg`*
+- [x] **ST-031** `pixel_to_latlon` + golden tests — P0 · R3 · 3 pts. *Processed chunks, raw slant-range samples and GeoTIFF pixels; straight and curved golden tests < 0.05 m, port/starboard direction (TC-GEO-001…003)*
 
 ### Other tasks
-- [ ] Freeze API spec and report schema v1.0; agree mock server approach (**Gate G1**) — R4, R3
-- [ ] Record which `pyxtf` implementation is used and confirm its licence — R2
-- [ ] Answer PRD Q7: datum/CRS for official reports — R3
-- [ ] Replace *(planned)* commands in Developer Setup with the real ones — R6
-- [ ] Automate TC-ING-001…012 and TC-GEO-001…008 in CI — R2, R3
+- [ ] Freeze API spec and report schema v1.0; agree mock server approach (**Gate G1**) — R4, R3. *Prepared: `backend/sonarsentinel/report/schema/report-1.0.schema.json` + validated example and rule tests (NOT_GEOTAGGED, reject reason, enums). **Open:** team approval, mock-server decision, tag `contracts-1.0`*
+- [x] Record which `pyxtf` implementation is used and confirm its licence: PyPI `pyxtf` = `oysstu/pyxtf`, MIT ([Licences §2.1](docs/legal/LICENSES_AND_COMPLIANCE.md#21-backend-ml-and-geospatial-python)) — R2
+- [ ] Answer PRD Q7: datum/CRS for official reports — R3. *Proposed: WGS84 geographic, 6 decimals ([ADR-015](docs/architecture/08-architecture-decisions.md#adr-015--report-datum-and-crs-wgs84-geographic-prd-q7)); confirm with NIOT*
+- [x] Replace *(planned)* commands in Developer Setup with the real ones *(done in Sprint 0)* — R6
+- [ ] Automate TC-ING-001…012 and TC-GEO-001…008 in CI — R2, R3. *Automated: TC-ING-001…012 and TC-GEO-001…003, 014; CI now installs the `geo` extra so reader tests run. TC-ING-006 runs locally on the DVC-tracked USGS lines and is skipped in CI, where the data isn't available. **Carried over:** TC-GEO-004/005 to ST-032 (Sprint 2), TC-GEO-006…008 to ST-033 (Sprint 3)*
 
 ### Exit criteria (M1)
-- [ ] A NOAA XTF track plots correctly on a map
-- [ ] Georef golden tests pass (< 0.05 m)
+- [x] A NOAA XTF track plots correctly on a map. *Done with USGS Grand Bay XTF, as no public NOAA raw XTF was reachable: `sonarsentinel track` exports GeoJSON for all 4 lines, and every track lies inside the survey metadata bounding box (automated in `test_ingest_xtf_real.py`). A visual overlay in QGIS is still worth doing at the M1 demo*
+- [ ] Georef golden tests pass (< 0.05 m). *Passing locally (127 backend tests); tick when CI is green on the pull request*
 - [ ] G1 passed: contracts approved
 
 ---

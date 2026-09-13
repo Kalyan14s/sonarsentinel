@@ -25,7 +25,7 @@ Add one row per downloaded survey or release (details in its `PROVENANCE.yaml`).
 
 | Survey / release ID | Source | Terms checked | External-source or proprietary parts? | Added by | Date |
 |---|---|---|---|---|---|
-| | | | | | |
+| USGS 2015-315-FA Grand Bay (doi:10.5066/P9374DKQ), 4 XTF lines | https://coastal.er.usgs.gov/data-release/doi-P9374DKQ/ | Public domain; redistributable with metadata and attribution (FGDC metadata `Access_Constraints`/`Use_Constraints`) | None stated | R6 (automated) | 2026-09-13 |
 
 ## Permissions log
 

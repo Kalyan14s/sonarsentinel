@@ -1,0 +1,249 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sonarsentinel/report-1.0",
+  "title": "SonarSentinel detection report 1.0",
+  "description": "Contract frozen at Gate G1. Human-readable field rules: docs/architecture/06-data-models.md.",
+  "type": "object",
+  "required": ["report_version", "generated_utc", "survey", "processing", "summary", "detections"],
+  "additionalProperties": false,
+  "properties": {
+    "report_version": { "const": "1.0" },
+    "generated_utc": { "$ref": "#/$defs/utc" },
+    "survey": {
+      "type": "object",
+      "required": ["survey_id", "name", "source_files", "source_format", "datum", "bbox"],
+      "additionalProperties": false,
+      "properties": {
+        "survey_id": { "type": "string", "pattern": "^SRV-[0-9]{8}-[0-9]{3,}$" },
+        "name": { "type": "string" },
+        "project": { "type": ["string", "null"] },
+        "source_files": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "source_format": { "enum": ["xtf", "jsf", "sl2", "sl3", "geotiff", "image_nav", "image_only"] },
+        "sonar": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "properties": {
+            "make": { "type": ["string", "null"] },
+            "model": { "type": ["string", "null"] },
+            "frequency_khz": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+            "range_m": { "type": ["number", "null"], "exclusiveMinimum": 0 }
+          }
+        },
+        "start_utc": { "$ref": "#/$defs/utcOrNull" },
+        "end_utc": { "$ref": "#/$defs/utcOrNull" },
+        "track_length_km": { "type": ["number", "null"], "minimum": 0 },
+        "area_covered_km2": { "type": ["number", "null"], "minimum": 0 },
+        "datum": { "const": "WGS84" },
+        "ground_resolution_m": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+        "bbox": {
+          "description": "[min_lon, min_lat, max_lon, max_lat]; null when NOT_GEOTAGGED",
+          "oneOf": [
+            {
+              "type": "array",
+              "prefixItems": [
+                { "$ref": "#/$defs/lon" },
+                { "$ref": "#/$defs/lat" },
+                { "$ref": "#/$defs/lon" },
+                { "$ref": "#/$defs/lat" }
+              ],
+              "items": false,
+              "minItems": 4
+            },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "processing": {
+      "type": "object",
+      "required": ["pipeline_version", "models", "config_hash", "quality"],
+      "additionalProperties": false,
+      "properties": {
+        "pipeline_version": { "type": "string" },
+        "models": {
+          "type": "object",
+          "additionalProperties": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9._-]+@[0-9]+\\.[0-9]+\\.[0-9]+$" }
+        },
+        "config_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]+" },
+        "runtime": { "type": ["string", "null"] },
+        "duration_s": { "type": ["number", "null"], "minimum": 0 },
+        "quality": {
+          "type": "object",
+          "required": ["warnings"],
+          "additionalProperties": false,
+          "properties": {
+            "dropout_pings": { "type": "integer", "minimum": 0 },
+            "high_motion_pings": { "type": "integer", "minimum": 0 },
+            "bottom_tracked": { "type": "boolean" },
+            "layback_estimated": { "type": "boolean" },
+            "warnings": { "type": "array", "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" }, "uniqueItems": true }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["total_detections", "by_class", "by_tier"],
+      "additionalProperties": false,
+      "properties": {
+        "total_detections": { "type": "integer", "minimum": 0 },
+        "by_class": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/class" },
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "by_tier": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/tier" },
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "detections": { "type": "array", "items": { "$ref": "#/$defs/detection" } }
+  },
+  "$defs": {
+    "utc": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$" },
+    "utcOrNull": { "oneOf": [{ "$ref": "#/$defs/utc" }, { "type": "null" }] },
+    "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+    "lon": { "type": "number", "minimum": -180, "maximum": 180 },
+    "class": { "enum": ["shipwreck", "pipe", "cylinder", "ghost_net", "debris_other", "unknown_anomaly"] },
+    "tier": { "enum": ["hazard", "review", "anomaly", "hidden"] },
+    "score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "nonNegativeOrNull": { "type": ["number", "null"], "minimum": 0 },
+    "qualityFlag": {
+      "enum": [
+        "DROPOUT", "HIGH_MOTION", "NEAR_NADIR", "SURFACE_RETURN_BAND", "TILE_EDGE",
+        "GPS_INTERPOLATED", "LAYBACK_ESTIMATED", "HEADING_FROM_COG",
+        "NO_ALTITUDE_BOTTOM_TRACKED", "NOT_GEOTAGGED"
+      ]
+    },
+    "detection": {
+      "type": "object",
+      "required": [
+        "detection_id", "class", "confidence", "alert_tier", "position", "footprint",
+        "dimensions", "orientation_deg", "sonar_ref", "scores", "quality_flags", "n_views",
+        "review", "model_version"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "detection_id": { "type": "string", "pattern": "^SRV-[0-9]{8}-[0-9]{3,}-D[0-9]{4,}$" },
+        "class": { "$ref": "#/$defs/class" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 100 },
+        "alert_tier": { "$ref": "#/$defs/tier" },
+        "position": {
+          "type": "object",
+          "required": ["lat", "lon", "depth_m", "uncertainty_m"],
+          "additionalProperties": false,
+          "properties": {
+            "lat": { "oneOf": [{ "$ref": "#/$defs/lat" }, { "type": "null" }] },
+            "lon": { "oneOf": [{ "$ref": "#/$defs/lon" }, { "type": "null" }] },
+            "depth_m": { "type": ["number", "null"] },
+            "uncertainty_m": { "$ref": "#/$defs/nonNegativeOrNull" }
+          }
+        },
+        "footprint": {
+          "description": "4 × [lat, lon], clockwise; null when NOT_GEOTAGGED",
+          "oneOf": [
+            {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "array",
+                "prefixItems": [{ "$ref": "#/$defs/lat" }, { "$ref": "#/$defs/lon" }],
+                "items": false,
+                "minItems": 2
+              }
+            },
+            { "type": "null" }
+          ]
+        },
+        "dimensions": {
+          "type": "object",
+          "required": ["length_m", "width_m", "area_m2", "height_m"],
+          "additionalProperties": false,
+          "properties": {
+            "length_m": { "$ref": "#/$defs/nonNegativeOrNull" },
+            "width_m": { "$ref": "#/$defs/nonNegativeOrNull" },
+            "area_m2": { "$ref": "#/$defs/nonNegativeOrNull" },
+            "height_m": { "$ref": "#/$defs/nonNegativeOrNull" }
+          }
+        },
+        "orientation_deg": { "type": ["number", "null"], "minimum": 0, "maximum": 180 },
+        "sonar_ref": {
+          "type": "object",
+          "required": ["source_file", "side"],
+          "additionalProperties": false,
+          "properties": {
+            "source_file": { "type": "string" },
+            "side": { "enum": ["port", "starboard", "n/a"] },
+            "ping_start": { "type": ["integer", "null"], "minimum": 0 },
+            "ping_end": { "type": ["integer", "null"], "minimum": 0 },
+            "ground_range_m": { "$ref": "#/$defs/nonNegativeOrNull" },
+            "time_utc": { "$ref": "#/$defs/utcOrNull" },
+            "pixel_bbox": {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 0 },
+              "minItems": 4,
+              "maxItems": 4
+            }
+          }
+        },
+        "scores": {
+          "type": "object",
+          "required": ["detector", "fused"],
+          "additionalProperties": false,
+          "properties": {
+            "detector": { "$ref": "#/$defs/score" },
+            "anomaly": { "$ref": "#/$defs/score" },
+            "shadow": { "$ref": "#/$defs/score" },
+            "fp_filter": { "$ref": "#/$defs/score" },
+            "persistence": { "$ref": "#/$defs/score" },
+            "dropout_penalty": { "$ref": "#/$defs/score" },
+            "motion_penalty": { "$ref": "#/$defs/score" },
+            "fused": { "$ref": "#/$defs/score" }
+          }
+        },
+        "quality_flags": { "type": "array", "items": { "$ref": "#/$defs/qualityFlag" }, "uniqueItems": true },
+        "n_views": { "type": "integer", "minimum": 1 },
+        "review": {
+          "type": "object",
+          "required": ["status"],
+          "additionalProperties": false,
+          "properties": {
+            "status": { "enum": ["pending", "confirmed", "rejected", "reclassified"] },
+            "reviewer": { "type": ["string", "null"] },
+            "reject_reason": { "enum": ["rock", "shadow", "ripples", "noise", "other", null] },
+            "note": { "type": ["string", "null"] },
+            "updated_utc": { "$ref": "#/$defs/utcOrNull" }
+          }
+        },
+        "model_version": { "type": "string" },
+        "chip_url": { "type": ["string", "null"] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "quality_flags": { "contains": { "const": "NOT_GEOTAGGED" } } } },
+          "then": {
+            "properties": {
+              "position": { "properties": { "lat": { "type": "null" }, "lon": { "type": "null" } } },
+              "footprint": { "type": "null" },
+              "sonar_ref": { "required": ["pixel_bbox"] }
+            }
+          },
+          "else": {
+            "properties": {
+              "position": { "properties": { "lat": { "type": "number" }, "lon": { "type": "number" } } }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "review": { "properties": { "status": { "const": "rejected" } } } } },
+          "then": {
+            "properties": { "review": { "required": ["reject_reason"], "properties": { "reject_reason": { "type": "string" } } } }
+          }
+        }
+      ]
+    }
+  }
+}

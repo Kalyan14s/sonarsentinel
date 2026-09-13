@@ -26,6 +26,7 @@ dependencies:
   - ruff
   - mypy
   - pre-commit
+  - jsonschema
   - pip:
       - pyxtf
       - opencv-python-headless

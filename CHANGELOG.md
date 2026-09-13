@@ -7,6 +7,34 @@ Categories: **Added** · **Changed** · **Deprecated** · **Removed** · **Fixed
 
 ## [Unreleased]
 
+*(Sprint 1 / Phase 2 in progress on branch `sprint-1/ingest-geo`.)*
+
+### Added
+- `SonarLog` contract 1.0 (ST-020): `image`, `ground_range_corrected`, warning codes, `has_navigation`
+- XTF reader (ST-021) with header-only scan, truncated-file recovery, sensor/ship navigation, NavUnits handling, channel selection and port sample-order detection; memory-mapped storage and overlapping chunk views (ST-026)
+- GeoTIFF reader (ST-022); image + navigation CSV reader with interpolation (ST-023); image-only path (ST-024); `ingest/reader.py` dispatcher and validate-style summary
+- Geo: units/CRS conversion and UTM zones (ST-030); `pixel_to_latlon` for processed chunks, raw slant-range samples and GeoTIFF pixels (ST-031); DMS formatting; track length, bbox and GeoJSON export
+- CLI `inspect` (JSON summary) and `track` (GeoJSON), with `--nav`, `--utm-epsg`, `--allow-no-gps`
+- Report JSON Schema 1.0 with a validated example (Gate G1 candidate)
+- Synthetic XTF generator for test data TD-01/TD-05 (`backend/tests/tools/make_synthetic_xtf.py`); `scripts/bench_xtf_memory.py`
+- Dataset scripts: `convert_mine_sss.py` (ST-011), `build_normal_pool.py` (ST-012), `convert_ai4shipwrecks.py` (ST-010), with tests in `ml/tests`
+- ADR-015 (proposed): reports use WGS84 geographic coordinates (PRD Q7)
+
+### Changed
+- `numpy`, `pandas`, `pyproj` are core dependencies; `jsonschema` added to dev; CI installs the `geo` extra and runs dataset script tests
+- Architecture 02: contract fields and XTF reading details
+
+### Fixed
+- XTF port sample-order detection: correlate port and starboard range profiles instead of assuming the darker end is nadir, which was wrong in shallow water
+
+### Data
+- USGS Grand Bay 2015 (doi:10.5066/P9374DKQ, Klein 3900, public domain): 4 XTF lines (65 MB) added to DVC with provenance. Reader output matches pyxtf's parser on 10 pings per file (TC-ING-006), and tracks lie inside the survey bounding box
+- Mine SSS (D2) converted locally: 1,170 images, 437 MILCO → `cylinder`, 231 NOMBO queued for review; normal seafloor pool of 1,687 tiles from object-free D2 images (KLSG download has no seafloor images)
+
+## [0.3.0] — 2026-09-13 — Phase 1 complete (Sprint 0)
+
+Phase 1 closed by the team lead; three team items (team ID, idea PDF upload, S3Simulator permission request) carried over to Phase 2.
+
 ### Added
 - Working repository at `C:\dev\sonarsentinel` (git `main`); Phase 0 documentation baseline committed and tagged `docs-baseline-1.0`
 - Backend scaffold (ST-001): `sonarsentinel` package with typed errors matching the API error model, config loading and hashing, upload validation (stage S0: extension, size, magic bytes), and CLI (`version`, `validate`, `config`; `detect` and `serve` are placeholders)

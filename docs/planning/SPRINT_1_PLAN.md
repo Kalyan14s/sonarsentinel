@@ -67,3 +67,22 @@
 ## 5. Carry-over rules
 
 Unfinished stories are re-estimated at the next planning, not silently rolled over. P0 stories take priority in Sprint 2; P1/stretch items are dropped first ([Backlog §4](PRODUCT_BACKLOG.md#4-backlog-grooming-rules)).
+
+## 6. Progress (2026-09-13, branch `sprint-1/ingest-geo`, not yet merged)
+
+| Story | Status | Evidence / what is left |
+|---|---|---|
+| ST-020 | ✅ Acceptance met | Contract 1.0; TC-ING-001…004 automated |
+| ST-021 | ✅ Acceptance met | Synthetic TD-01 exact; 4 USGS Klein 3900 lines match pyxtf's parser on 10 pings each (TC-ING-006); port order detection fixed for real data |
+| ST-022 | ✅ Acceptance met | TC-ING-009 |
+| ST-023 | ✅ Acceptance met | TC-ING-004, 010 |
+| ST-024 | ✅ Acceptance met (reader + schema) | TC-ING-011 reader part; end-to-end in TC-E2E-003 |
+| ST-026 | ✅ Acceptance met | 2.0 GB XTF: 6 s, peak private memory 91 MB, working set 2.1 GB (`scripts/bench_xtf_memory.py`) |
+| ST-030 | ✅ Acceptance met | TC-ING-007, 008 |
+| ST-031 | ✅ Acceptance met | TC-GEO-001…003 < 0.05 m |
+| ST-010 | 🟡 Converter ready | Browser download from Deep Blue, then run and check overlays |
+| ST-011 | 🟡 Converted | NOMBO review of 231 crops by R1 |
+| ST-012 | ✅ Acceptance met | 1,687 tiles from object-free D2 images (KLSG repo has no seafloor images) |
+| ST-013 | 🟡 1 of 3 surveys | USGS Grand Bay 2015: 4 lines in DVC with provenance; still need 2 surveys, a second sonar model and a charted wreck |
+| G1 | 🟡 Prepared | Report schema 1.0 + tests; needs approval, mock-server decision and tag |
+| PRD Q7 | 🟡 Proposed | ADR-015 (WGS84); confirm with NIOT |

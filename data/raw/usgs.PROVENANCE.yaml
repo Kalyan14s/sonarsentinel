@@ -1,0 +1,40 @@
+downloaded_utc: '2026-09-13'
+downloaded_by: automated download (R6), HTTP range requests into the release zip (members only)
+id: D8
+name: Subbottom and Sidescan Sonar Data Acquired in 2015 From Grand Bay, Mississippi and Alabama
+field_activity: 2015-315-FA (project 15CCT03)
+source_url: https://coastal.er.usgs.gov/data-release/doi-P9374DKQ/data/2015-315-FA_xtf.zip
+record_url: https://doi.org/10.5066/P9374DKQ
+doi: 10.5066/P9374DKQ
+licence_terms: >-
+  Public domain. Access_Constraints "None. These data are held in the public domain."
+  Use_Constraints "freely redistributable with proper metadata and source attribution";
+  USGS requests acknowledgement as originator.
+citation: Locker, S.D., Forde, A.S., and Smith, C.G., 2018, U.S. Geological Survey data release, doi:10.5066/P9374DKQ
+sonar: Klein 3900 dual frequency (455/900 kHz); files hold 2 side-scan channels (port 0, starboard 1), 4,096 samples, 100 m range; header SonarName "Klein 3000"; SonarPro 12.1
+navigation: NavUnits 3 (WGS84 lat/lon), DGPS/RTK; XTF Layback field 0; towfish 1.85 m starboard and 0.20 m forward of the GPS antenna (metadata)
+survey_bbox_wgs84: {west: -88.412144, south: 30.342408, east: -88.317322, north: 30.417417}
+charted_wreck: none known in the survey area (not used for TD-10)
+notes:
+- Port channel stored far range first (confirmed by comparison with pyxtf and waterfall preview, 2026-09-13).
+- SensorPrimaryAltitude values (1-74 m) are implausible for a ~0.6 m towfish depth in a shallow estuary; use bottom tracking (ST-040).
+- Only 4 of 143 lines downloaded (test data TD-02).
+files:
+- name: grandbay_2015-315-FA/15CCT03_SSS_150528201100.xtf
+  size_bytes: 34602624
+  sha256: dd3aa62d055edc47cc54923e6763961ecc4056420f1d49767083e4bb50006ac3
+- name: grandbay_2015-315-FA/15CCT03_SSS_150529142500.xtf
+  size_bytes: 4084224
+  sha256: 5d57f5dd491b360537f3f48d99c4033bf0b19be3166c711f6b26f0c81b246f6e
+- name: grandbay_2015-315-FA/15CCT03_SSS_150601141000.xtf
+  size_bytes: 177024
+  sha256: fa665af1b0d9a40f20ef1d0dffd5ad32980b943e6f683a5fd5b6e7559ef64657
+- name: grandbay_2015-315-FA/15CCT03_SSS_154_150603135900.xtf
+  size_bytes: 26313024
+  sha256: 9899ac4d94fe80f6bfda29559eafc34e53a4781c547ffe0f0163ab1c4894d7e8
+- name: grandbay_2015-315-FA/GrandBay_2015-315-FA_metadata.txt
+  size_bytes: 32601
+  sha256: 36736ed67024c1130c5ec8affef67c9d9756e44a0eb67d530a32480d5897f770
+- name: grandbay_2015-315-FA/GrandBay_2015-315-FA_metadata.xml
+  size_bytes: 33775
+  sha256: 8f60b82e7b287e448aa6f9f4919d99daa1dc5b6aa308f3c5df58da628ce60360
