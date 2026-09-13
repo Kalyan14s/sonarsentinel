@@ -163,8 +163,9 @@ jobs:
       - name: Backend logs
         if: always()
         run: docker logs ss-backend || true
+      # nginx resolves the "backend" upstream at load time; outside Compose map it to localhost.
       - name: Smoke test frontend (nginx config)
-        run: docker run --rm sonarsentinel/frontend:ci nginx -t
+        run: docker run --rm --add-host backend:127.0.0.1 sonarsentinel/frontend:ci nginx -t
       # TC-SEC-004 image scan: report CRITICAL and HIGH with a fix available; fail on CRITICAL only
       # (HIGH findings in the Debian/Alpine base images are reviewed from the uploaded reports).
       - name: Trivy report (backend)
