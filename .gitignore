@@ -1,0 +1,52 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+build/
+dist/
+
+# ---- Environments & secrets ----
+.env
+.venv/
+venv/
+
+# ---- Data, models and outputs (DVC / shared storage, never git) ----
+# Anchored to the repository root so docs/data/ stays tracked.
+/data/
+/models/
+/runs/
+/results/
+/labels/
+/tiles/
+*.mbtiles
+
+# ---- Large sonar / raster files anywhere ----
+*.xtf
+*.jsf
+*.sl2
+*.sl3
+*.tif
+*.tiff
+
+# ---- Node / frontend ----
+node_modules/
+/frontend/dist/
+
+# ---- DVC internals ----
+/.dvc/tmp
+/.dvc/cache
+
+# ---- OS / editors ----
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+~$*
