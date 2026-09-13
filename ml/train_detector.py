@@ -43,6 +43,12 @@ def main() -> None:
     parser.add_argument("--workers", type=int, default=0, help="0 avoids Windows worker issues")
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Continue an interrupted run from runs/detector/<name>/weights/last.pt "
+        "with its saved arguments.",
+    )
     args = parser.parse_args()
 
     from ultralytics import YOLO
@@ -77,8 +83,11 @@ def main() -> None:
         "deterministic": True,
     }
     started = time.time()
-    model = YOLO(args.model)
-    results = model.train(**train_args)
+    if args.resume:
+        last = ROOT / "runs" / "detector" / args.name / "weights" / "last.pt"
+        results = YOLO(str(last)).train(resume=True)
+    else:
+        results = YOLO(args.model).train(**train_args)
     run_dir = Path(results.save_dir)
     registry = ROOT / "models" / "detector" / args.name / args.version
     registry.mkdir(parents=True, exist_ok=True)

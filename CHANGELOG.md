@@ -16,7 +16,7 @@ Categories: **Added** · **Changed** · **Deprecated** · **Removed** · **Fixed
 - Report builder and JSON/CSV export (report schema 1.0), alert tiers, quality flags per detection
 - FastAPI skeleton with `/api/v1/health`, `/api/v1/models`, `/docs` (ST-080); mock API with canned survey, filters, paging, CSV, review `PATCH` and WebSocket replay with `seq` resume (ST-087); `sonarsentinel serve [--mock]`
 - Dashboard shell (ST-090): React + TypeScript + Vite, routing for all screens, design tokens, typed API client, generated report types, Live Map against the mock API
-- ML: `ml/evaluate.py` (AP@50 box/mask, PR curves, confusion, bootstrap CI; ST-057), synthetic pipe and cylinder generators (ST-017), `prepare_yolo.py`, `train_detector.py`, `train_anomaly.py`, `compare_sahi.py`
+- ML: `ml/evaluate.py` (AP@50 box/mask, PR curves, confusion, bootstrap CI; ST-057), synthetic pipe and cylinder generators (ST-017), `prepare_yolo.py`, `train_detector.py` (with `--resume` for interrupted runs), `train_anomaly.py`, `compare_sahi.py`
 - Integration test ST-110: synthetic XTF → CLI → schema-valid JSON/CSV, chunk-overlap dedupe, determinism, image-only path
 - Sprint 3 plan; ADR-016 (own PatchCore, rule-based stand-in, CPU baselines)
 

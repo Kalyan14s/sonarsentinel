@@ -59,7 +59,7 @@ python ml/compare_sahi.py --data data/processed/yolo/0.1.0-real --split val \
 | Precision / recall @ conf 0.25 | 0.375 / 0.429 |
 | Confusion @ conf 0.25 | 12 cylinders found, 16 missed, 20 false positives on 93 images |
 | Ghost-net recall (synthetic holdout, 329 nets) | **0.00** as expected (no ghost-net training data): 37 nets detected as `cylinder`, 292 missed, 158 `cylinder` false positives on 200 images |
-| Small-object recall, full image vs SAHI | *pending* |
+| Recall @ IoU 0.5, full image vs SAHI (TC-DET-004) | all 28: 0.43 → **0.50**; small (longest side < 32 px, 18 objects): 0.33 → **0.39** (6 → 7 found); 0.26 → 1.65 s per image on CPU (`compare_sahi.py`, conf 0.20, 512 px slices, 20% overlap) |
 | FP per km² | not measured (needs contact-free survey lines, TD-11) |
 
 Ultralytics' own validation of the same weights (final epoch): box P 0.343, R 0.393, mAP@50 0.329, mAP@50-95 0.140; mask mAP@50 0.302, mAP@50-95 0.068. The two mAP@50 values differ because Ultralytics interpolates the PR curve differently; `evaluate.py` is the project's reference.
