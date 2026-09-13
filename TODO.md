@@ -18,8 +18,8 @@ The single checklist for the whole project, from documentation to hackathon fina
 ```mermaid
 flowchart LR
     P0["Phase 0<br/>Docs & design<br/>✅ complete"] --> P1["Phase 1<br/>Sprint 0 · Setup<br/>✅ complete"]
-    P1 --> P2["Phase 2<br/>Sprint 1 · Ingest & Geo<br/>🟡 in progress"]
-    P2 --> P3["Phase 3<br/>Sprint 2 · Preprocess & Data<br/>M2"]
+    P1 --> P2["Phase 2<br/>Sprint 1 · Ingest & Geo<br/>✅ complete"]
+    P2 --> P3["Phase 3<br/>Sprint 2 · Preprocess & Data<br/>🟡 in progress"]
     P3 --> P4["Phase 4<br/>Sprint 3 · Models & thin slice<br/>M3 · G2"]
     P4 --> P5["Phase 5<br/>Sprint 4 · Scoring, reports, API<br/>M4 · G3"]
     P5 --> P6["Phase 6<br/>Sprint 5 · Dashboard<br/>M5 · G4 · P0 freeze"]
@@ -31,8 +31,8 @@ flowchart LR
 |---|---|---|---|---|---|---|
 | [0](#phase-0--documentation--design) | — | → 2026-09-13 | Docs baseline | Complete, verified documentation | 20 | 20 |
 | [1](#phase-1--sprint-0--project-setup) | S0 | 09-14 → 09-18 | M0 · IS (idea PDF due 09-30) | Team can build, test, collaborate; SIH idea submitted | 25 | 25 |
-| [2](#phase-2--sprint-1--ingest--geotagging) | S1 | 09-21 → 09-25 | M1 · G1 | Read sonar logs and place them correctly on a map | 23 | 12 |
-| [3](#phase-3--sprint-2--preprocessing--training-data) | S2 | 09-28 → 10-02 | M2 | Clean, tiled sonar data; training data ready | 19 | 0 |
+| [2](#phase-2--sprint-1--ingest--geotagging) | S1 | 09-21 → 09-25 | M1 · G1 | Read sonar logs and place them correctly on a map | 14 | 14 |
+| [3](#phase-3--sprint-2--preprocessing--training-data) | S2 | 09-28 → 10-02 | M2 | Clean, tiled sonar data; training data ready | 28 | 0 |
 | [4](#phase-4--sprint-3--models--thin-slice) | S3 | 10-05 → 10-09 | M3 · G2 | Trained models; CLI report end to end | 20 | 0 |
 | [5](#phase-5--sprint-4--scoring-reports--api) | S4 | 10-12 → 10-16 | M4 · G3 | Trustworthy confidence; reports; upload + jobs API | 22 | 0 |
 | [6](#phase-6--sprint-5--dashboard-p0-freeze) | S5 | 10-19 → 10-23 | M5 · G4 | Live dashboard end to end; P0 freeze | 19 | 0 |
@@ -122,18 +122,10 @@ flowchart LR
 
 **Dates:** 2026-09-21 → 09-25 · **Milestone:** M1 · **Gate:** G1 (contracts) · **Sprint goal:** read sonar logs and put them on the map with correct GPS.
 
-> **Status:** 🟡 started 2026-09-13, ahead of the planned dates. Work happens on branch `sprint-1/ingest-geo` and merges into `main` through a pull request with passing CI.
-
-### Carried over from Phase 1
-- [ ] Get the team ID from the SIH portal and add it to the deck (team name Vashishta is already on it); re-export the PDF *(moved from Phase 1)* — R6
-- [ ] Upload the final idea PDF on the SIH portal: deadline 30 Sept *(moved from Phase 1)* — R6
-- [ ] Send the S3Simulator permission request ([draft](docs/communications/OUTREACH_DRAFTS.md#4-s3simulator-authors--dataset-permission-optional)); its sample files stay local-only until permission is granted *(moved from Phase 1)* — R1
+> **✅ Phase 2 complete (2026-09-13), closed by the team lead.** Ingest and geotagging code merged to `main` (`8d13648`), CI green; 9 open items were **carried over to [Phase 3](#phase-3--sprint-2--preprocessing--training-data)**: 3 team items from Phase 1, ST-010, ST-011, ST-013, Gate G1, PRD Q7 and the G1 exit criterion.
 
 ### Data
-- [ ] **ST-010** Download AI4Shipwrecks; convert masks to YOLO-seg — P0 · R1 · 3 pts. *Converter ready and unit-tested (`ml/datasets/convert_ai4shipwrecks.py`, writes 20 QA overlays). **Open:** download in a browser from Deep Blue (scripts get HTTP 403), check the mask encoding, run the converter, inspect the overlays*
-- [ ] **ST-011** Mine SSS dataset; MILCO → `cylinder`; review NOMBO — P0 · R1 · 3 pts. *Converted with `ml/datasets/convert_mine_sss.py`: 1,170 images, 437 MILCO → `cylinder` polygons, 866 object-free images; labels are YOLO boxes (`0` MILCO, `1` NOMBO), verified; overlays spot-checked and aligned. **Open:** R1 reviews the 231 NOMBO crops in `data/interim/mine_sss/nombo_review.csv` (`debris_other` or background)*
 - [x] **ST-012** Normal seafloor pool (victim images excluded) — P0 · R1 · 2 pts. *1,687 tiles of 256 px (≥ 500 required) from 866 object-free mine-SSS images, 2010/2015/2017/2018 missions; contact sheet spot-checked. **Source change:** the public KLSG repository we downloaded has only ship and airplane crops, no seafloor images, so the pool uses D2 (CC BY 4.0). Built by `ml/datasets/build_normal_pool.py` into `data/processed/anomaly/normal/`*
-- [ ] **ST-013** ≥ 3 NOAA/USGS XTF surveys incl. ≥ 1 charted wreck, with provenance — P0 · R3 · 3 pts. *Search 2026-09-13: NCEI NOS survey folders have no raw side-scan data; NOAA InPort 47922 (Hudson River) only has a dead FTP link. **Downloaded:** 4 lines (65 MB) of USGS Grand Bay 2015 (doi:10.5066/P9374DKQ, Klein 3900, public domain) via HTTP range requests from the 9.84 GB release zip, with `data/raw/usgs.PROVENANCE.yaml` and DVC. **Open:** 2 more surveys, a second sonar model and a survey over a charted wreck (TD-10); options are NOAA OCM for the Hudson River link, NCEI archive accessions, or ScienceBase releases*
 
 ### Ingestion
 - [x] **ST-020** `SonarLog` data contract, validators, error types — P0 · R2 · 3 pts. *Contract 1.0 in `ingest/models.py` (adds `image`, `ground_range_corrected` and warning codes); TC-ING-001…004 automated*
@@ -148,22 +140,32 @@ flowchart LR
 - [x] **ST-031** `pixel_to_latlon` + golden tests — P0 · R3 · 3 pts. *Processed chunks, raw slant-range samples and GeoTIFF pixels; straight and curved golden tests < 0.05 m, port/starboard direction (TC-GEO-001…003)*
 
 ### Other tasks
-- [ ] Freeze API spec and report schema v1.0; agree mock server approach (**Gate G1**) — R4, R3. *Prepared: `backend/sonarsentinel/report/schema/report-1.0.schema.json` + validated example and rule tests (NOT_GEOTAGGED, reject reason, enums). **Open:** team approval, mock-server decision, tag `contracts-1.0`*
 - [x] Record which `pyxtf` implementation is used and confirm its licence: PyPI `pyxtf` = `oysstu/pyxtf`, MIT ([Licences §2.1](docs/legal/LICENSES_AND_COMPLIANCE.md#21-backend-ml-and-geospatial-python)) — R2
-- [ ] Answer PRD Q7: datum/CRS for official reports — R3. *Proposed: WGS84 geographic, 6 decimals ([ADR-015](docs/architecture/08-architecture-decisions.md#adr-015--report-datum-and-crs-wgs84-geographic-prd-q7)); confirm with NIOT*
 - [x] Replace *(planned)* commands in Developer Setup with the real ones *(done in Sprint 0)* — R6
-- [ ] Automate TC-ING-001…012 and TC-GEO-001…008 in CI — R2, R3. *Automated: TC-ING-001…012 and TC-GEO-001…003, 014; CI now installs the `geo` extra so reader tests run. TC-ING-006 runs locally on the DVC-tracked USGS lines and is skipped in CI, where the data isn't available. **Carried over:** TC-GEO-004/005 to ST-032 (Sprint 2), TC-GEO-006…008 to ST-033 (Sprint 3)*
+- [x] Automate TC-ING-001…012 and TC-GEO-001…008 in CI (or carry over explicitly, per the Sprint 1 plan) — R2, R3. *Automated: TC-ING-001…012 and TC-GEO-001…003, 014; CI now installs the `geo` extra so reader tests run. TC-ING-006 runs locally on the DVC-tracked USGS lines and is skipped in CI, where the data isn't available. **Carried over:** TC-GEO-004/005 to ST-032 (Sprint 2), TC-GEO-006…008 to ST-033 (Sprint 3)*
 
 ### Exit criteria (M1)
 - [x] A NOAA XTF track plots correctly on a map. *Done with USGS Grand Bay XTF, as no public NOAA raw XTF was reachable: `sonarsentinel track` exports GeoJSON for all 4 lines, and every track lies inside the survey metadata bounding box (automated in `test_ingest_xtf_real.py`). A visual overlay in QGIS is still worth doing at the M1 demo*
-- [ ] Georef golden tests pass (< 0.05 m). *Passing locally (127 backend tests); tick when CI is green on the pull request*
-- [ ] G1 passed: contracts approved
+- [x] Georef golden tests pass (< 0.05 m). *Green in CI on `main` (`8d13648`, [run](https://github.com/Kalyan14s/sonarsentinel/actions/runs/34761096740): backend, docs, frontend and Ubuntu conda jobs passed)*
 
 ---
 
 ## Phase 3 · Sprint 2 — Preprocessing & training data
 
 **Dates:** 2026-09-28 → 10-02 · **Milestone:** M2 · **Sprint goal:** clean, normalised, tiled sonar data; training data ready.
+
+> **Status:** 🟡 started 2026-09-13 on branch `sprint-2/preprocess-data` ([Sprint 2 plan](docs/planning/SPRINT_2_PLAN.md)).
+
+### Carried over from Phase 2
+- [ ] Get the team ID from the SIH portal and add it to the deck (team name Vashishta is already on it); re-export the PDF *(moved from Phase 1, then Phase 2)* — R6
+- [ ] Upload the final idea PDF on the SIH portal: deadline 30 Sept *(moved from Phase 1, then Phase 2)* — R6
+- [ ] Send the S3Simulator permission request ([draft](docs/communications/OUTREACH_DRAFTS.md#4-s3simulator-authors--dataset-permission-optional)); its sample files stay local-only until permission is granted *(moved from Phase 1, then Phase 2)* — R1
+- [ ] **ST-010** Download AI4Shipwrecks; convert masks to YOLO-seg — P0 · R1 · 3 pts *(moved from Phase 2)*. *Converter ready and unit-tested (`ml/datasets/convert_ai4shipwrecks.py`). **Open:** download in a browser from Deep Blue (scripts get HTTP 403), check the mask encoding, run the converter, inspect the overlays*
+- [ ] **ST-011** Mine SSS dataset; MILCO → `cylinder`; review NOMBO — P0 · R1 · 3 pts *(moved from Phase 2)*. *Converted: 1,170 images, 437 MILCO → `cylinder`, overlays aligned. **Open:** R1 reviews the 231 NOMBO crops in `data/interim/mine_sss/nombo_review.csv`*
+- [ ] **ST-013** ≥ 3 NOAA/USGS XTF surveys incl. ≥ 1 charted wreck, with provenance — P0 · R3 · 3 pts *(moved from Phase 2)*. *Have 1 survey: 4 USGS Grand Bay 2015 lines (Klein 3900) in DVC with provenance. **Open:** 2 more surveys, a second sonar model, and a survey over a charted wreck (TD-10)*
+- [ ] Freeze API spec and report schema v1.0; agree mock server approach (**Gate G1**) — R4, R3 *(moved from Phase 2)*. *Prepared: `report-1.0.schema.json` with a validated example and rule tests. **Open:** team approval, mock-server decision, tag `contracts-1.0`*
+- [ ] Answer PRD Q7: datum/CRS for official reports — R3 *(moved from Phase 2)*. *Proposed: WGS84 geographic ([ADR-015](docs/architecture/08-architecture-decisions.md#adr-015--report-datum-and-crs-wgs84-geographic-prd-q7)); confirm with NIOT*
+- [ ] G1 passed: contracts approved *(M1 exit criterion, moved from Phase 2)*
 
 ### Data & labelling
 - [ ] **ST-014** CVAT/Label Studio + SAM 2 (not SAM 3); label ≥ 100 real tiles (10% double-labelled) — P0 · R2 · 5 pts
