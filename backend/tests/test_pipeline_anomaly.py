@@ -23,6 +23,7 @@ from tools.make_synthetic_xtf import write_synthetic_xtf  # noqa: E402
 from sonarsentinel.config import load_config  # noqa: E402
 from sonarsentinel.detect.anomaly import heat_regions  # noqa: E402
 from sonarsentinel.pipeline import run_pipeline  # noqa: E402
+from sonarsentinel.scoring.fusion import fuse  # noqa: E402
 
 
 class FakeAnomaly:
@@ -74,8 +75,21 @@ def test_pipeline_emits_anomaly_scores_and_unknown_anomalies(tmp_path: Path) -> 
     assert target["scores"]["anomaly"] > 0.5  # bright object is hot in the heatmap
     unknown = by_class["unknown_anomaly"]
     assert unknown, "patch seen only by the anomaly model should become unknown_anomaly"
-    assert all(d["alert_tier"] in ("anomaly", "review", "hazard") for d in unknown)
-    assert all(d["scores"]["fused"] == d["scores"]["anomaly"] for d in unknown)
+    tau = float(cfg["anomaly"]["threshold"])
+    weights = cfg["scoring"]["weights"]
+    for det in unknown:
+        scores = det["scores"]
+        # ADR-017: fused is the weighted mean of the available components minus penalties.
+        expected = fuse(
+            scores,
+            weights,
+            dropout_penalty=scores["dropout_penalty"],
+            motion_penalty=scores["motion_penalty"],
+        )
+        assert scores["fused"] == pytest.approx(expected, abs=1e-6)
+        assert scores["anomaly"] >= tau  # regions come from pixels above the anomaly threshold
+        if 30.0 <= det["confidence"] < 50.0:
+            assert det["alert_tier"] == "anomaly"
 
     plain = run_pipeline(survey.path, config=cfg)
     assert plain["processing"]["models"]["anomaly"] is None

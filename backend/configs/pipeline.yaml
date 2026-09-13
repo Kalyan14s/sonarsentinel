@@ -1,6 +1,6 @@
 # SonarSentinel pipeline configuration.
 # Reference: docs/architecture/02-data-pipeline.md section 6. Model files are created from Sprint 3.
-pipeline_version: 0.1.0
+pipeline_version: 0.2.0             # 0.2.0: Sprint 4 scoring (shadow, features, fusion, calibration), layback, chips
 
 ingest:
   max_upload_gb: 2
@@ -11,7 +11,10 @@ navigation:
   smoothing_window_pings: 31
   heading_smoothing_window_pings: 25
   max_speed_mps: 6.0
-  apply_layback: auto              # auto | true | false
+  apply_layback: auto              # auto | true | false (auto: only when the file has ship positions only)
+  manual_layback_m: null           # operator layback in metres; overrides file values and estimates
+  tow_point_height_m: 0.0          # vertical term in layback = sqrt(L² − (d − tow_point_height)²) + antenna_to_tow_point
+  antenna_to_tow_point_m: 0.0      # horizontal GNSS antenna → tow point distance
 
 preprocess:
   ground_resolution_m: 0.10
@@ -49,8 +52,8 @@ anomaly:
 scoring:
   weights: { detector: 0.45, anomaly: 0.15, shadow: 0.15, fp_filter: 0.15, persistence: 0.10 }
   penalties: { dropout: 0.20, motion: 0.10 }
-  fp_filter_model: models/fp_filter/lgbm/1.1.0/model.txt
-  calibrator: models/calibrator/isotonic/1.1.0/calibrator.pkl
+  fp_filter_model: models/fp_filter/lgbm-fp/0.1.0          # folder with model.txt + model.json (ml/train_fp_filter.py)
+  calibrator: models/calibrator/isotonic/0.1.0/calibrator.json   # JSON breakpoints (ml/calibrate.py)
   tiers: { hazard: 80, review: 50, anomaly: 30 }
 
 geo:

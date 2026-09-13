@@ -225,6 +225,7 @@ def detect(
             anomaly_model=build_anomaly(cfg, no_anomaly),
             min_conf=min_conf,
             on_event=progress,
+            results_dir=out,
         )
         paths = write_reports(report, out, [f.strip() for f in formats.split(",") if f.strip()])
     except SonarSentinelError as exc:

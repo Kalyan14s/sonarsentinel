@@ -30,6 +30,7 @@ venv/
 /data/uploads/
 /data/results/
 /data/work/
+/data/api/
 /models/
 /runs/
 /results/

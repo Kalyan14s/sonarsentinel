@@ -70,7 +70,7 @@ strict = true
 files = ["sonarsentinel"]
 
 [[tool.mypy.overrides]]
-module = ["pyxtf.*", "rasterio.*", "sahi.*", "ultralytics.*", "anomalib.*", "pandas.*", "pyproj.*", "scipy.*", "cv2.*", "torch.*", "torchvision.*"]
+module = ["pyxtf.*", "rasterio.*", "sahi.*", "ultralytics.*", "anomalib.*", "pandas.*", "pyproj.*", "scipy.*", "cv2.*", "torch.*", "torchvision.*", "lightgbm.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

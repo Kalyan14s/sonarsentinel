@@ -97,8 +97,9 @@ sonarsentinel detect line_07.xtf --detector yolo \
 
 ```python
 from sonarsentinel.detect.yolo import YoloDetector
+
 det = YoloDetector("models/detector/yolo11s-seg-sonar-real/0.1.0/best.pt", sahi=True)
-detections = det.predict(tiles_3ch)   # tiles from the SonarSentinel preprocessing pipeline only
+detections = det.predict(tiles_3ch)  # tiles from the SonarSentinel preprocessing pipeline only
 ```
 
 **Thresholds:** `conf` 0.20 (adapter default); tiers use the identity calibrator until ST-064.

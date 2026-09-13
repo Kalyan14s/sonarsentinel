@@ -8,7 +8,7 @@ from sonarsentinel.errors import ValidationError
 
 def test_default_config_matches_documented_defaults() -> None:
     cfg = load_config()
-    assert cfg["pipeline_version"] == "0.1.0"
+    assert cfg["pipeline_version"] == "0.2.0"
     assert cfg["preprocess"]["ground_resolution_m"] == 0.10
     assert cfg["tiling"] == {"size_px": 640, "overlap": 0.25, "skip_if_masked_fraction_gt": 0.8}
     assert cfg["scoring"]["tiers"] == {"hazard": 80, "review": 50, "anomaly": 30}

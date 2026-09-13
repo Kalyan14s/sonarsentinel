@@ -1,6 +1,6 @@
 {
  "report_version": "1.0",
- "generated_utc": "2026-09-13T15:44:48Z",
+ "generated_utc": "2026-09-13T18:01:44Z",
  "survey": {
   "survey_id": "SRV-20260912-900",
   "name": "MOCK Chennai line 07",
@@ -29,16 +29,16 @@
   ]
  },
  "processing": {
-  "pipeline_version": "0.1.0",
+  "pipeline_version": "0.2.0",
   "models": {
    "detector": "classical-bright-target@0.1.0",
    "anomaly": null,
-   "fp_filter": null,
-   "calibrator": "identity@0.1.0"
+   "fp_filter": "lgbm-fp@0.1.0",
+   "calibrator": "isotonic@0.1.0"
   },
-  "config_hash": "sha256:d96eaa6cbf64c1b8c0b0dd7e08e6245d31af585958149912c6177a1f08db3e87",
+  "config_hash": "sha256:31e9e143165a3f20e93ccda53564d3ed309e0d6df436adb8c8b9ab8082afd632",
   "runtime": "cpu",
-  "duration_s": 3.3,
+  "duration_s": 1.79,
   "quality": {
    "dropout_pings": 0,
    "high_motion_pings": 0,
@@ -112,6 +112,9 @@
    },
    "scores": {
     "detector": 0.495,
+    "shadow": 0.1269,
+    "fp_filter": 0.5301,
+    "persistence": 0.5,
     "dropout_penalty": 0.0,
     "motion_penalty": 0.0,
     "fused": 0.915
@@ -161,7 +164,7 @@
     "length_m": 1.6,
     "width_m": 1.2,
     "area_m2": 1.89,
-    "height_m": null
+    "height_m": 0.1
    },
    "orientation_deg": 173.3,
    "sonar_ref": {
@@ -174,6 +177,9 @@
    },
    "scores": {
     "detector": 0.4955,
+    "shadow": 0.4739,
+    "fp_filter": 0.7729,
+    "persistence": 0.5,
     "dropout_penalty": 0.0,
     "motion_penalty": 0.0,
     "fused": 0.842
@@ -236,6 +242,9 @@
    },
    "scores": {
     "detector": 0.4937,
+    "shadow": 0.38,
+    "fp_filter": 0.7233,
+    "persistence": 0.5,
     "dropout_penalty": 0.0,
     "motion_penalty": 0.0,
     "fused": 0.728
@@ -298,6 +307,9 @@
    },
    "scores": {
     "detector": 0.4939,
+    "shadow": 0.3412,
+    "fp_filter": 0.7219,
+    "persistence": 0.5,
     "dropout_penalty": 0.0,
     "motion_penalty": 0.0,
     "fused": 0.63
@@ -360,6 +372,9 @@
    },
    "scores": {
     "detector": 0.4942,
+    "shadow": 0.0886,
+    "fp_filter": 0.5416,
+    "persistence": 0.5,
     "dropout_penalty": 0.0,
     "motion_penalty": 0.0,
     "fused": 0.554
@@ -409,7 +424,7 @@
     "length_m": 1.6,
     "width_m": 1.2,
     "area_m2": 1.84,
-    "height_m": null
+    "height_m": 0.07
    },
    "orientation_deg": 37.2,
    "sonar_ref": {
@@ -422,6 +437,9 @@
    },
    "scores": {
     "detector": 0.4947,
+    "shadow": 0.5146,
+    "fp_filter": 0.7704,
+    "persistence": 0.5,
     "dropout_penalty": 0.0,
     "motion_penalty": 0.0,
     "fused": 0.449
@@ -484,6 +502,9 @@
    },
    "scores": {
     "detector": 0.5056,
+    "shadow": 0.2442,
+    "fp_filter": 0.6736,
+    "persistence": 0.5,
     "dropout_penalty": 0.0,
     "motion_penalty": 0.0,
     "fused": 0.273
@@ -546,6 +567,9 @@
    },
    "scores": {
     "detector": 0.4856,
+    "shadow": 0.3273,
+    "fp_filter": 0.0191,
+    "persistence": 0.5,
     "dropout_penalty": 0.0,
     "motion_penalty": 0.0,
     "fused": 0.915

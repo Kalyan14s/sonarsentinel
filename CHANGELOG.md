@@ -9,6 +9,23 @@ Categories: **Added** · **Changed** · **Deprecated** · **Removed** · **Fixed
 
 *(Phase 2 merged to `main` in `8d13648`, Phase 3 in `4237954`. Sprint 3 / Phase 4 on `main`.)*
 
+### Added (Sprint 4)
+- Scoring (ST-060…065, ADR-017): shadow consistency score and height from shadow length; 36 model, shadow, geometry, edge, texture, context and quality features per detection (< 5 ms); fusion of detector, anomaly, shadow, FP-filter and persistence scores with renormalised weights; isotonic calibrator (JSON breakpoints, pool-adjacent-violators) and LightGBM FP filter loaded at run time when present; `anomaly` tier requires anomaly score ≥ τ
+- Layback correction (ST-034): XTF layback field, manual value or cable-out estimate (`LAYBACK_ESTIMATED`); new `navigation.manual_layback_m`, `tow_point_height_m`, `antenna_to_tow_point_m`
+- Cross-line clustering and persistence (ST-038): `run_survey` merges the same object seen on several lines (`n_views`, `detection_update` / `detection_removed` events)
+- Detection chips (ST-073): 256 px PNG per detection with `mask`, `shadow`, `anomaly` and `none` overlays under `results/<survey_id>/chips/`; `chip_url` filled
+- SQLite storage (ST-085): SQLAlchemy models for the 06 §4 tables, versioned migrations; job manager with a background worker, cancel within one chunk and job status (ST-082); `POST /surveys/validate` and `POST /surveys` with streamed uploads, size limit and file checks (ST-081)
+- Upload screen S-01 (ST-091): drop zone, per-file validation and badges, nav CSV or "continue without GPS", advanced options, upload progress and cancel; live map follows `?job=`
+- ML tooling: `ml/train_fp_filter.py` (out-of-fold AUROC, SHAP summary), `ml/tune_fusion.py` (grid search on AP), `ml/calibrate.py` (cross-validated ECE, reliability table), shared `ml/scoring_data.py`
+- Sprint 4 plan; ADR-017
+
+### Changed (Sprint 4)
+- `pipeline_version` 0.2.0; `run_pipeline` gains `should_cancel`, `results_dir`, layback options; `sonarsentinel detect` writes chips next to the report
+- Scoring config points to `models/fp_filter/lgbm-fp/0.1.0` and `models/calibrator/isotonic/0.1.0/calibrator.json`
+
+### Fixed (Sprint 4)
+- `alert_tier` put detections in the `anomaly` tier without checking the anomaly score against τ
+
 ### Added (Sprint 3)
 - Thin slice (Gate G2): `pipeline.py` orchestrator (ST-075) runs S0–S7, detection, merge, measurement, scoring and report per file with job events (progress, track, warning, detection, done); `sonarsentinel detect` writes `report.json` and `report.csv` (ST-074)
 - Detection: `Detector` interface, YOLO11-seg adapter with SAHI slicing (ST-052), rule-based stand-in `classical-bright-target@0.1.0`, merge/dedupe across tiles and chunks (ST-054), PatchCore anomaly model with `unknown_anomaly` regions (ST-053)

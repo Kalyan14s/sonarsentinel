@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 
 import { api, subscribeToJob, type Detection, type JobEvent, type SurveySummary } from '../api/client';
 import { Workspace } from '../components/Workspace';
@@ -7,15 +7,28 @@ import { MapView } from '../map/MapView';
 import { CLASS_STYLES, TIER_LABELS, type AlertTier, type DetectionClass } from '../tokens';
 import styles from './LiveMapPage.module.css';
 
-/** S-02 Live Map: track, detections and a replay of the processing events. */
+/**
+ * S-02 Live Map: track, detections and a replay of the processing events.
+ * With `?job=<job_id>` (set by the upload screen) it follows that job's events live.
+ */
 export function LiveMapPage() {
   const params = useParams();
+  const [search] = useSearchParams();
+  const jobId = search.get('job');
   const [survey, setSurvey] = useState<SurveySummary | null>(null);
   const [track, setTrack] = useState<[number, number][]>([]);
   const [detections, setDetections] = useState<Detection[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [progress, setProgress] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+
+  const applyEvent = useCallback((event: JobEvent) => {
+    if (event.type === 'progress') setProgress(`${event.stage} ${event.percent.toFixed(0)}%`);
+    if (event.type === 'track') setTrack((prev) => [...prev, ...event.points]);
+    if (event.type === 'detection') setDetections((prev) => [...prev, event.detection]);
+    if (event.type === 'done') setProgress(event.status);
+    if (event.type === 'error') setError(event.message);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -26,38 +39,43 @@ export function LiveMapPage() {
           setError('No surveys yet. Upload a sonar file to start.');
           return;
         }
-        const [summary, line, list] = await Promise.all([
-          api.survey(id),
+        const summary = await api.survey(id);
+        if (cancelled) return;
+        setSurvey(summary);
+        if (jobId) return; // a live job streams its own track and detections
+        const [line, list] = await Promise.all([
           api.track(id),
           api.detections(id, { sort: '-confidence', limit: 500 }),
         ]);
         if (cancelled) return;
-        setSurvey(summary);
         setTrack(line.features[0]?.geometry.coordinates.map(([lon, lat]) => [lat, lon]) ?? []);
         setDetections(list.items);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
+        if (!cancelled && !jobId) setError(err instanceof Error ? err.message : String(err));
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [params.surveyId]);
+  }, [params.surveyId, jobId]);
+
+  useEffect(() => {
+    if (!jobId) return;
+    setTrack([]);
+    setDetections([]);
+    setProgress('queued');
+    return subscribeToJob(jobId, applyEvent);
+  }, [jobId, applyEvent]);
 
   const replay = useCallback(() => {
     if (!survey) return;
     setTrack([]);
     setDetections([]);
     const unsubscribe = subscribeToJob(survey.job.job_id, (event: JobEvent) => {
-      if (event.type === 'progress') setProgress(`${event.stage} ${event.percent.toFixed(0)}%`);
-      if (event.type === 'track') setTrack((prev) => [...prev, ...event.points]);
-      if (event.type === 'detection') setDetections((prev) => [...prev, event.detection]);
-      if (event.type === 'done') {
-        setProgress(event.status);
-        unsubscribe();
-      }
+      applyEvent(event);
+      if (event.type === 'done') unsubscribe();
     });
-  }, [survey]);
+  }, [survey, applyEvent]);
 
   const selectedDetection = useMemo(
     () => detections.find((d) => d.detection_id === selected) ?? null,
@@ -71,7 +89,7 @@ export function LiveMapPage() {
           <strong>{survey?.name ?? 'Live map'}</strong>
           {survey && <span>Job {survey.job.status}</span>}
           {progress && <span aria-live="polite">{progress}</span>}
-          <button type="button" onClick={replay} disabled={!survey} className={styles.button}>
+          <button type="button" onClick={replay} disabled={!survey || Boolean(jobId)} className={styles.button}>
             Replay processing
           </button>
         </>

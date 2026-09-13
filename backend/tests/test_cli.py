@@ -37,7 +37,7 @@ def test_validate_all_ok_exits_zero(tmp_path: Path) -> None:
 def test_config_command_prints_hash() -> None:
     result = runner.invoke(app, ["config"])
     assert result.exit_code == 0
-    assert "pipeline_version: 0.1.0" in result.output
+    assert "pipeline_version: 0.2.0" in result.output
     assert "config_hash: sha256:" in result.output
 
 

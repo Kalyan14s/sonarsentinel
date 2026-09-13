@@ -2,14 +2,14 @@
  {
   "type": "progress",
   "seq": 1,
-  "ts": "2026-09-13T15:44:45Z",
+  "ts": "2026-09-13T18:01:43Z",
   "stage": "validate",
   "percent": 0.0
  },
  {
   "type": "progress",
   "seq": 2,
-  "ts": "2026-09-13T15:44:45Z",
+  "ts": "2026-09-13T18:01:43Z",
   "stage": "parse",
   "percent": 5.0,
   "pings_done": 0,
@@ -18,7 +18,7 @@
  {
   "type": "track",
   "seq": 3,
-  "ts": "2026-09-13T15:44:48Z",
+  "ts": "2026-09-13T18:01:44Z",
   "points": [
    [
     13.0802,
@@ -427,7 +427,7 @@
  {
   "type": "progress",
   "seq": 4,
-  "ts": "2026-09-13T15:44:48Z",
+  "ts": "2026-09-13T18:01:44Z",
   "stage": "detect",
   "percent": 50.0,
   "pings_done": 2000,
@@ -436,7 +436,7 @@
  {
   "type": "track",
   "seq": 5,
-  "ts": "2026-09-13T15:44:48Z",
+  "ts": "2026-09-13T18:01:44Z",
   "points": [
    [
     13.079998,
@@ -845,7 +845,7 @@
  {
   "type": "progress",
   "seq": 6,
-  "ts": "2026-09-13T15:44:48Z",
+  "ts": "2026-09-13T18:01:44Z",
   "stage": "detect",
   "percent": 90.0,
   "pings_done": 2300,
@@ -854,14 +854,14 @@
  {
   "type": "progress",
   "seq": 7,
-  "ts": "2026-09-13T15:44:48Z",
+  "ts": "2026-09-13T18:01:44Z",
   "stage": "merge",
   "percent": 90.0
  },
  {
   "type": "detection",
   "seq": 8,
-  "ts": "2026-09-13T15:44:48Z",
+  "ts": "2026-09-13T18:01:44Z",
   "detection": {
    "detection_id": "SRV-20260912-900-D0001",
    "class": "ghost_net",
@@ -908,6 +908,9 @@
    },
    "scores": {
     "detector": 0.495,
+    "shadow": 0.1269,
+    "fp_filter": 0.5301,
+    "persistence": 0.5,
     "dropout_penalty": 0.0,
     "motion_penalty": 0.0,
     "fused": 0.915
@@ -928,7 +931,7 @@
  {
   "type": "detection",
   "seq": 9,
-  "ts": "2026-09-13T15:44:48Z",
+  "ts": "2026-09-13T18:01:44Z",
   "detection": {
    "detection_id": "SRV-20260912-900-D0002",
    "class": "shipwreck",
@@ -962,7 +965,7 @@
     "length_m": 1.6,
     "width_m": 1.2,
     "area_m2": 1.89,
-    "height_m": null
+    "height_m": 0.1
    },
    "orientation_deg": 173.3,
    "sonar_ref": {
@@ -975,6 +978,9 @@
    },
    "scores": {
     "detector": 0.4955,
+    "shadow": 0.4739,
+    "fp_filter": 0.7729,
+    "persistence": 0.5,
     "dropout_penalty": 0.0,
     "motion_penalty": 0.0,
     "fused": 0.842
@@ -995,7 +1001,7 @@
  {
   "type": "detection",
   "seq": 10,
-  "ts": "2026-09-13T15:44:48Z",
+  "ts": "2026-09-13T18:01:44Z",
   "detection": {
    "detection_id": "SRV-20260912-900-D0003",
    "class": "pipe",
@@ -1042,6 +1048,9 @@
    },
    "scores": {
     "detector": 0.4937,
+    "shadow": 0.38,
+    "fp_filter": 0.7233,
+    "persistence": 0.5,
     "dropout_penalty": 0.0,
     "motion_penalty": 0.0,
     "fused": 0.728
@@ -1062,7 +1071,7 @@
  {
   "type": "detection",
   "seq": 11,
-  "ts": "2026-09-13T15:44:48Z",
+  "ts": "2026-09-13T18:01:44Z",
   "detection": {
    "detection_id": "SRV-20260912-900-D0004",
    "class": "cylinder",
@@ -1109,6 +1118,9 @@
    },
    "scores": {
     "detector": 0.4939,
+    "shadow": 0.3412,
+    "fp_filter": 0.7219,
+    "persistence": 0.5,
     "dropout_penalty": 0.0,
     "motion_penalty": 0.0,
     "fused": 0.63
@@ -1129,7 +1141,7 @@
  {
   "type": "detection",
   "seq": 12,
-  "ts": "2026-09-13T15:44:48Z",
+  "ts": "2026-09-13T18:01:44Z",
   "detection": {
    "detection_id": "SRV-20260912-900-D0005",
    "class": "debris_other",
@@ -1176,6 +1188,9 @@
    },
    "scores": {
     "detector": 0.4942,
+    "shadow": 0.0886,
+    "fp_filter": 0.5416,
+    "persistence": 0.5,
     "dropout_penalty": 0.0,
     "motion_penalty": 0.0,
     "fused": 0.554
@@ -1196,7 +1211,7 @@
  {
   "type": "detection",
   "seq": 13,
-  "ts": "2026-09-13T15:44:48Z",
+  "ts": "2026-09-13T18:01:44Z",
   "detection": {
    "detection_id": "SRV-20260912-900-D0006",
    "class": "ghost_net",
@@ -1230,7 +1245,7 @@
     "length_m": 1.6,
     "width_m": 1.2,
     "area_m2": 1.84,
-    "height_m": null
+    "height_m": 0.07
    },
    "orientation_deg": 37.2,
    "sonar_ref": {
@@ -1243,6 +1258,9 @@
    },
    "scores": {
     "detector": 0.4947,
+    "shadow": 0.5146,
+    "fp_filter": 0.7704,
+    "persistence": 0.5,
     "dropout_penalty": 0.0,
     "motion_penalty": 0.0,
     "fused": 0.449
@@ -1263,7 +1281,7 @@
  {
   "type": "detection",
   "seq": 14,
-  "ts": "2026-09-13T15:44:48Z",
+  "ts": "2026-09-13T18:01:44Z",
   "detection": {
    "detection_id": "SRV-20260912-900-D0007",
    "class": "cylinder",
@@ -1310,6 +1328,9 @@
    },
    "scores": {
     "detector": 0.5056,
+    "shadow": 0.2442,
+    "fp_filter": 0.6736,
+    "persistence": 0.5,
     "dropout_penalty": 0.0,
     "motion_penalty": 0.0,
     "fused": 0.273
@@ -1330,7 +1351,7 @@
  {
   "type": "detection",
   "seq": 15,
-  "ts": "2026-09-13T15:44:48Z",
+  "ts": "2026-09-13T18:01:44Z",
   "detection": {
    "detection_id": "SRV-20260912-900-D0008",
    "class": "ghost_net",
@@ -1377,6 +1398,9 @@
    },
    "scores": {
     "detector": 0.4856,
+    "shadow": 0.3273,
+    "fp_filter": 0.0191,
+    "persistence": 0.5,
     "dropout_penalty": 0.0,
     "motion_penalty": 0.0,
     "fused": 0.915
@@ -1397,14 +1421,14 @@
  {
   "type": "progress",
   "seq": 16,
-  "ts": "2026-09-13T15:44:48Z",
+  "ts": "2026-09-13T18:01:44Z",
   "stage": "report",
   "percent": 95.0
  },
  {
   "type": "done",
   "seq": 17,
-  "ts": "2026-09-13T15:44:48Z",
+  "ts": "2026-09-13T18:01:44Z",
   "status": "completed_with_warnings",
   "summary": {
    "total_detections": 8,

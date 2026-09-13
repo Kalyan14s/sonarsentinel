@@ -34,7 +34,7 @@ flowchart LR
 | [2](#phase-2--sprint-1--ingest--geotagging) | S1 | 09-21 → 09-25 | M1 · G1 | Read sonar logs and place them correctly on a map | 14 | 14 |
 | [3](#phase-3--sprint-2--preprocessing--training-data) | S2 | 09-28 → 10-02 | M2 | Clean, tiled sonar data; training data ready | 12 | 12 |
 | [4](#phase-4--sprint-3--models--thin-slice) | S3 | 10-05 → 10-09 | M3 · G2 | Trained models; CLI report end to end | 16 | 16 |
-| [5](#phase-5--sprint-4--scoring-reports--api) | S4 | 10-12 → 10-16 | M4 · G3 | Trustworthy confidence; reports; upload + jobs API | 42 | 0 |
+| [5](#phase-5--sprint-4--scoring-reports--api) | S4 | 10-12 → 10-16 | M4 · G3 | Trustworthy confidence; reports; upload + jobs API | 42 | 17 |
 | [6](#phase-6--sprint-5--dashboard-p0-freeze) | S5 | 10-19 → 10-23 | M5 · G4 | Live dashboard end to end; P0 freeze | 19 | 0 |
 | [7](#phase-7--sprint-6--hardening-validation-edge--demo) | S6 | 10-26 → 10-30 | M6 · G5 | Validated, benchmarked, demo-ready release candidate | 24 | 0 |
 | [8](#phase-8--sih-finale--handover) | — | Proposed Dec 2026 | Finale | Win the demo; hand over cleanly | 11 | 0 |
@@ -222,7 +222,7 @@ flowchart LR
 
 **Dates:** 2026-10-12 → 10-16 · **Milestone:** M4 · **Gate:** G3 (model quality) · **Sprint goal:** trustworthy confidence, reports, upload + jobs API.
 
-> **Status:** 🟡 in progress (started 2026-09-13).
+> **Status:** 🟡 in progress (started 2026-09-13, [Sprint 4 plan](docs/planning/SPRINT_4_PLAN.md)). Scoring, layback, cross-line clustering, chips, storage, upload API, jobs and the upload screen are built and tested ([TSR-M4](docs/testing/reports/TSR-M4.md)). **Open:** G3 model quality (needs GPU-trained models), ST-051/ST-055, AC-08 (TD-13), the CSV spreadsheet check, and the carried-over people/data items.
 
 ### Carried over from Phase 4
 - [ ] Get the team ID from the SIH portal and add it to the deck (team name Vashishta is already on it); re-export the PDF *(moved from Phase 1, 2, 3, then 4)* — R6
@@ -247,40 +247,40 @@ flowchart LR
 - [ ] Check risk R1 trigger: synthetic ghost-net recall < 0.60 → schedule ST-055 — R1. *Waits for ST-051; the baseline's holdout recall of 0.00 only reflects that it had no ghost-net training data* *(moved from Phase 4)*
 
 ### Scoring & calibration
-- [ ] **ST-055** Small-object variant (imgsz 1024 / P2) if ghost-net recall is low — P1 · R1 · 5 pts
-- [ ] **ST-060** Shadow consistency score + height estimate — P0 · R1 · 5 pts
-- [ ] **ST-061** Shape/texture feature extraction — P1 · R1 · 3 pts
-- [ ] **ST-062** LightGBM false-positive filter — P1 · R1 · 3 pts
-- [ ] **ST-063** Fusion + weight tuning — P0 · R1 · 3 pts
-- [ ] **ST-064** Isotonic calibration, reliability diagram, ECE — P0 · R1 · 3 pts
-- [ ] **ST-065** Alert tiers, quality penalties, flags — P0 · R1 · 2 pts
+- [ ] **ST-055** Small-object variant (imgsz 1024 / P2) if ghost-net recall is low — P1 · R1 · 5 pts. *Blocked on ST-051: the R1 trigger needs ghost-net recall from the synthetic ablation (GPU or ≥ 6 GB free RAM)*
+- [ ] **ST-060** Shadow consistency score + height estimate — P0 · R1 · 5 pts. *Built: `scoring/shadow.py` (highlight contrast × far-range shadow darkness × coverage, ADR-017) and height `h = Ls·H/(r+Ls)` in `dimensions.height_m`; TC-CONF-004 (object beats shadow-only patch by ≥ 0.3) and TC-CONF-006 (1 m object ± 30%, both sides) pass. **Open:** AC-08 / TC-CONF-005 needs 50 curated shadow/rock false positives (TD-13)*
+- [x] **ST-061** Shape/texture feature extraction — P1 · R1 · 3 pts. *`scoring/features.py`: 36 model, shadow, geometry, edge, texture, context and quality features; deterministic, median < 5 ms per detection (tested); computed for every waterfall detection*
+- [x] **ST-062** LightGBM false-positive filter — P1 · R1 · 3 pts. *`ml/train_fp_filter.py` → `fp_filter/lgbm-fp@0.1.0`: out-of-fold AUROC **0.747** vs 0.692 for the detector score (val, 137 detections / 20 TP); SHAP summary in [EXP-20260913-scoring](ml/experiments/EXP-20260913-scoring.md) (TC-CONF-010). Loaded by the pipeline when `lightgbm` and the model exist; CPU-baseline tooling evidence, refit before G3 (ADR-017 §7)*
+- [x] **ST-063** Fusion + weight tuning — P0 · R1 · 3 pts. *`scoring/fusion.py` (renormalised weighted mean minus penalties) and `ml/tune_fusion.py`: AP fused **0.251** with the configured weights (grid best 0.278) ≥ detector 0.246 on val; configured weights kept (20 TP; shadow side unknown on tiles). TC-CONF-003 passes unit and end to end*
+- [x] **ST-064** Isotonic calibration, reliability diagram, ECE — P0 · R1 · 3 pts. *`ml/calibrate.py` → `calibrator/isotonic@0.1.0` (JSON breakpoints): calib split (site 2021, 402 detections / 33 TP) ECE 0.144 → **0.048** out of fold (95% CI 0.027–0.080), reliability table in the experiment log (TC-CONF-008). High-score bins are nearly empty with the CPU baseline; refit before G3*
+- [x] **ST-065** Alert tiers, quality penalties, flags — P0 · R1 · 2 pts. *`anomaly` tier now requires anomaly score ≥ τ (bug fixed); `DROPOUT`/`HIGH_MOTION` penalties; `NEAR_NADIR`, `TILE_EDGE`, `LAYBACK_ESTIMATED` flags; TC-CONF-001, 002 (all boundaries incl. τ), 003 and the TC-CONF-007 penalty rule pass; an end-to-end dropout-over-target fixture is still to add*
 
 ### Geotagging
-- [ ] **ST-034** Layback correction — P1 · R3 · 3 pts
-- [ ] **ST-038** Cross-line DBSCAN clustering + persistence — P1 · R3 · 3 pts
+- [x] **ST-034** Layback correction — P1 · R3 · 3 pts. *`geo/layback.py`: manual value, XTF layback field, or cable-out estimate for ship-only positions (`LAYBACK_ESTIMATED`, `processing.quality.layback_estimated`), applied before preprocessing; TC-GEO-009 (100 m cable, 20 m depth → 97.98 m astern) passes. The along-track time lag is not applied (no formula in the design)*
+- [x] **ST-038** Cross-line DBSCAN clustering + persistence — P1 · R3 · 3 pts. *`geo/cluster.py` (haversine DBSCAN, min_samples 1, 5 m, same class, ≥ 2 lines) and `run_survey`: the most confident member is kept with averaged position, `n_views`, persistence `1 − 0.5^n` and rescored confidence, plus `detection_update`/`detection_removed` events; TC-GEO-013 passes unit and end to end on two synthetic lines*
 
 ### Reports
-- [ ] **ST-070** JSON Schema `report-1.0` + JSON export — P0 · R4 · 3 pts
-- [ ] **ST-071** CSV export — P0 · R4 · 1 pt
-- [ ] **ST-073** Detection chips with overlays — P0 · R4 · 2 pts
+- [x] **ST-070** JSON Schema `report-1.0` + JSON export — P0 · R4 · 3 pts. *Schema and export from Sprint 3; reports from single-line, two-line, image-only and API-job runs validate in the test suite (TC-REP-001, 005, 006, 008). Contract approval stays with Gate G1*
+- [ ] **ST-071** CSV export — P0 · R4 · 1 pt. *23 columns per 06 §3.1 with 6-decimal coordinates, written and read back in the CLI integration test. **Open:** open it in Excel/LibreOffice (manual AC-07 check) and the TD-02 CSV↔JSON comparison*
+- [x] **ST-073** Detection chips with overlays — P0 · R4 · 2 pts. *`report/chips.py`: 256 px PNG per detection with `mask`, `shadow`, `anomaly`, `none` overlays in `results/<survey_id>/chips/`, renamed to final IDs and removed for merged duplicates; `chip_url` filled; TC-REP-009 passes unit and end to end. The chip endpoint is ST-084 (Sprint 5)*
 
 ### Backend
-- [ ] **ST-081** `POST /surveys/validate` and `POST /surveys` — P0 · R4 · 3 pts
-- [ ] **ST-082** Job manager, worker, cancel, status — P0 · R4 · 5 pts
-- [ ] **ST-085** SQLite storage layer — P0 · R4 · 3 pts
+- [x] **ST-081** `POST /surveys/validate` and `POST /surveys` — P0 · R4 · 3 pts. *`api/surveys.py`: streamed multipart upload with 413 at the size limit, sanitised filenames and SHA-256, magic-byte checks (415/422), strict options model (400), per-file header metadata; TC-API-001, 002, 003 pass*
+- [x] **ST-082** Job manager, worker, cancel, status — P0 · R4 · 5 pts. *`jobs/manager.py`: background worker, `GET /jobs/{id}` (status, stage, percent, pings, timings, warnings); cancel queued → 200, running → 202 and stops within one chunk, finished → 409 (TC-API-006); events in `job.log.jsonl`. Deviation: thread worker instead of processes (ADR-017 §10)*
+- [x] **ST-085** SQLite storage layer — P0 · R4 · 3 pts. *`storage/`: SQLAlchemy 2.0 models for the 06 §4 tables and indexes plus the full detection JSON; versioned migrations applied at startup (idempotent, tested); detections and reports persisted per job*
 
 ### Frontend
-- [ ] **ST-091** Upload screen (S-01) — P0 · R5 · 5 pts
+- [x] **ST-091** Upload screen (S-01) — P0 · R5 · 5 pts. *`frontend/src/pages/UploadPage.tsx` + `upload/uploadModel.ts`: drop zone, validation rows and badges, nav CSV or continue without GPS, remembered advanced options, Start rules, per-file upload progress and cancel, invalid/too-large/nav-CSV/offline states, phone layout; 10 new tests (16 total) pass. Limits: validation uploads the whole file; min shown % stays in the browser*
 
 ### Other tasks
-- [ ] Execute TC-CONF-001…010, TC-REP-001…009, TC-API-001…009 — R1, R4
-- [ ] Test Summary Report `TSR-M4` ([template](docs/testing/TEST_PLAN.md#9-test-summary-report-template)) — R6
-- [ ] Update ADRs if model or scoring choices changed — R1
+- [x] Execute TC-CONF-001…010, TC-REP-001…009, TC-API-001…009 — R1, R4. *Results in [TSR-M4](docs/testing/reports/TSR-M4.md). Blocked: TC-CONF-005 (TD-13), TC-CONF-009 (TD-11), TC-API-009 (schemathesis not installed); TC-REP-003/004/007 and the real TC-API-004/005/007 endpoints belong to Sprint 5 stories*
+- [x] Test Summary Report `TSR-M4` ([template](docs/testing/TEST_PLAN.md#9-test-summary-report-template)) — R6. *[TSR-M4](docs/testing/reports/TSR-M4.md): **No-go for G3 model quality**, go for Sprint 5 development*
+- [x] Update ADRs if model or scoring choices changed — R1. *[ADR-017](docs/architecture/08-architecture-decisions.md#adr-017--sprint-4-scoring-storage-and-job-decisions)*
 
 ### Exit criteria (M4 / G3)
-- [ ] ECE ≤ 0.10; AC-04 passes; JSON/CSV parts of AC-07 pass
-- [ ] Model metrics ≥ 80% of PRD targets
-- [ ] Upload API and jobs run the real pipeline
+- [ ] ECE ≤ 0.10; AC-04 passes; JSON/CSV parts of AC-07 pass. *ECE 0.048 on calib (CPU-baseline tooling) ✓; AC-04 confidence range and tiers ✓ (UI slider part in Sprint 5); AC-07 JSON validates ✓, CSV spreadsheet check open*
+- [ ] Model metrics ≥ 80% of PRD targets. ***Not met:** baseline val mAP@50 0.283 vs ≥ 0.56; ghost-net recall not measured (ST-051 blocked); needs GPU-trained models*
+- [x] Upload API and jobs run the real pipeline. *`POST /surveys` → worker → `run_survey` → reports, chips and SQLite rows; tested on synthetic XTF (TC-API-001, 006)*
 
 ---
 

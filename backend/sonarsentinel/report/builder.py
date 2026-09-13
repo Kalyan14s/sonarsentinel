@@ -27,14 +27,25 @@ def now_utc() -> str:
 
 
 def alert_tier(
-    confidence: float, tiers: dict[str, float], anomaly_score: float | None = None
+    confidence: float,
+    tiers: dict[str, float],
+    anomaly_score: float | None = None,
+    anomaly_threshold: float = 0.5,
 ) -> str:
-    """``hazard`` / ``review`` / ``anomaly`` / ``hidden`` from calibrated confidence (0–100)."""
+    """``hazard`` / ``review`` / ``anomaly`` / ``hidden`` from calibrated confidence (0–100).
+
+    ``anomaly`` needs confidence in the anomaly band **and** an anomaly score ≥ τ
+    (``anomaly.threshold``; ``docs/architecture/03-ml-models.md`` §5, ADR-017 §4).
+    """
     if confidence >= tiers["hazard"]:
         return "hazard"
     if confidence >= tiers["review"]:
         return "review"
-    if anomaly_score is not None and confidence >= tiers["anomaly"]:
+    if (
+        anomaly_score is not None
+        and anomaly_score >= anomaly_threshold
+        and confidence >= tiers["anomaly"]
+    ):
         return "anomaly"
     return "hidden"
 
