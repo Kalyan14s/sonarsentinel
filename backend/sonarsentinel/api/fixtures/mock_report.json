@@ -1,0 +1,566 @@
+{
+ "report_version": "1.0",
+ "generated_utc": "2026-09-13T15:44:48Z",
+ "survey": {
+  "survey_id": "SRV-20260912-900",
+  "name": "MOCK Chennai line 07",
+  "project": "mock-fixture",
+  "source_files": [
+   "mock_line.xtf"
+  ],
+  "source_format": "xtf",
+  "sonar": {
+   "make": null,
+   "model": "SYNTH-SSS",
+   "frequency_khz": 600.0,
+   "range_m": 50.0
+  },
+  "start_utc": "2026-09-12T05:10:02.00Z",
+  "end_utc": "2026-09-12T05:13:51.90Z",
+  "track_length_km": 0.23,
+  "area_covered_km2": 0.023,
+  "datum": "WGS84",
+  "ground_resolution_m": 0.1,
+  "bbox": [
+   80.3071,
+   13.079641,
+   80.308921,
+   13.080351
+  ]
+ },
+ "processing": {
+  "pipeline_version": "0.1.0",
+  "models": {
+   "detector": "classical-bright-target@0.1.0",
+   "anomaly": null,
+   "fp_filter": null,
+   "calibrator": "identity@0.1.0"
+  },
+  "config_hash": "sha256:d96eaa6cbf64c1b8c0b0dd7e08e6245d31af585958149912c6177a1f08db3e87",
+  "runtime": "cpu",
+  "duration_s": 3.3,
+  "quality": {
+   "dropout_pings": 0,
+   "high_motion_pings": 0,
+   "bottom_tracked": false,
+   "layback_estimated": false,
+   "warnings": [
+    "RULE_BASED_DETECTOR"
+   ]
+  }
+ },
+ "summary": {
+  "total_detections": 8,
+  "by_class": {
+   "cylinder": 2,
+   "debris_other": 1,
+   "ghost_net": 3,
+   "pipe": 1,
+   "shipwreck": 1
+  },
+  "by_tier": {
+   "anomaly": 1,
+   "hazard": 3,
+   "hidden": 1,
+   "review": 3
+  }
+ },
+ "detections": [
+  {
+   "detection_id": "SRV-20260912-900-D0001",
+   "class": "ghost_net",
+   "confidence": 91.5,
+   "alert_tier": "hazard",
+   "position": {
+    "lat": 13.080148,
+    "lon": 80.307363,
+    "depth_m": 18.2,
+    "uncertainty_m": null
+   },
+   "footprint": [
+    [
+     13.080153,
+     80.307356
+    ],
+    [
+     13.080156,
+     80.307365
+    ],
+    [
+     13.080143,
+     80.307369
+    ],
+    [
+     13.08014,
+     80.307361
+    ]
+   ],
+   "dimensions": {
+    "length_m": 1.6,
+    "width_m": 1.2,
+    "area_m2": 1.87,
+    "height_m": null
+   },
+   "orientation_deg": 162.4,
+   "sonar_ref": {
+    "source_file": "mock_line.xtf",
+    "side": "starboard",
+    "ping_start": 250,
+    "ping_end": 261,
+    "ground_range_m": 16.35,
+    "time_utc": "2026-09-12T05:10:27.60Z"
+   },
+   "scores": {
+    "detector": 0.495,
+    "dropout_penalty": 0.0,
+    "motion_penalty": 0.0,
+    "fused": 0.915
+   },
+   "quality_flags": [],
+   "n_views": 1,
+   "review": {
+    "status": "pending",
+    "reviewer": null,
+    "reject_reason": null,
+    "note": null,
+    "updated_utc": null
+   },
+   "model_version": "classical-bright-target@0.1.0",
+   "chip_url": null
+  },
+  {
+   "detection_id": "SRV-20260912-900-D0002",
+   "class": "shipwreck",
+   "confidence": 84.2,
+   "alert_tier": "hazard",
+   "position": {
+    "lat": 13.080519,
+    "lon": 80.307548,
+    "depth_m": 18.2,
+    "uncertainty_m": null
+   },
+   "footprint": [
+    [
+     13.080524,
+     80.307542
+    ],
+    [
+     13.080526,
+     80.307553
+    ],
+    [
+     13.080512,
+     80.307555
+    ],
+    [
+     13.080511,
+     80.307543
+    ]
+   ],
+   "dimensions": {
+    "length_m": 1.6,
+    "width_m": 1.2,
+    "area_m2": 1.89,
+    "height_m": null
+   },
+   "orientation_deg": 173.3,
+   "sonar_ref": {
+    "source_file": "mock_line.xtf",
+    "side": "port",
+    "ping_start": 530,
+    "ping_end": 541,
+    "ground_range_m": 19.65,
+    "time_utc": "2026-09-12T05:10:55.50Z"
+   },
+   "scores": {
+    "detector": 0.4955,
+    "dropout_penalty": 0.0,
+    "motion_penalty": 0.0,
+    "fused": 0.842
+   },
+   "quality_flags": [],
+   "n_views": 1,
+   "review": {
+    "status": "pending",
+    "reviewer": null,
+    "reject_reason": null,
+    "note": null,
+    "updated_utc": null
+   },
+   "model_version": "classical-bright-target@0.1.0",
+   "chip_url": null
+  },
+  {
+   "detection_id": "SRV-20260912-900-D0003",
+   "class": "pipe",
+   "confidence": 72.8,
+   "alert_tier": "review",
+   "position": {
+    "lat": 13.080141,
+    "lon": 80.307811,
+    "depth_m": 18.2,
+    "uncertainty_m": null
+   },
+   "footprint": [
+    [
+     13.080148,
+     80.307807
+    ],
+    [
+     13.080148,
+     80.307816
+    ],
+    [
+     13.080134,
+     80.307815
+    ],
+    [
+     13.080135,
+     80.307806
+    ]
+   ],
+   "dimensions": {
+    "length_m": 1.6,
+    "width_m": 1.2,
+    "area_m2": 1.88,
+    "height_m": null
+   },
+   "orientation_deg": 4.3,
+   "sonar_ref": {
+    "source_file": "mock_line.xtf",
+    "side": "starboard",
+    "ping_start": 810,
+    "ping_end": 821,
+    "ground_range_m": 22.85,
+    "time_utc": "2026-09-12T05:11:23.60Z"
+   },
+   "scores": {
+    "detector": 0.4937,
+    "dropout_penalty": 0.0,
+    "motion_penalty": 0.0,
+    "fused": 0.728
+   },
+   "quality_flags": [],
+   "n_views": 1,
+   "review": {
+    "status": "pending",
+    "reviewer": null,
+    "reject_reason": null,
+    "note": null,
+    "updated_utc": null
+   },
+   "model_version": "classical-bright-target@0.1.0",
+   "chip_url": null
+  },
+  {
+   "detection_id": "SRV-20260912-900-D0004",
+   "class": "cylinder",
+   "confidence": 63.0,
+   "alert_tier": "review",
+   "position": {
+    "lat": 13.080531,
+    "lon": 80.308145,
+    "depth_m": 18.2,
+    "uncertainty_m": null
+   },
+   "footprint": [
+    [
+     13.080538,
+     80.30814
+    ],
+    [
+     13.080535,
+     80.308152
+    ],
+    [
+     13.080523,
+     80.308148
+    ],
+    [
+     13.080526,
+     80.308137
+    ]
+   ],
+   "dimensions": {
+    "length_m": 1.5,
+    "width_m": 1.2,
+    "area_m2": 1.76,
+    "height_m": null
+   },
+   "orientation_deg": 15.3,
+   "sonar_ref": {
+    "source_file": "mock_line.xtf",
+    "side": "port",
+    "ping_start": 1090,
+    "ping_end": 1101,
+    "ground_range_m": 26.0,
+    "time_utc": "2026-09-12T05:11:51.60Z"
+   },
+   "scores": {
+    "detector": 0.4939,
+    "dropout_penalty": 0.0,
+    "motion_penalty": 0.0,
+    "fused": 0.63
+   },
+   "quality_flags": [],
+   "n_views": 1,
+   "review": {
+    "status": "pending",
+    "reviewer": null,
+    "reject_reason": null,
+    "note": null,
+    "updated_utc": null
+   },
+   "model_version": "classical-bright-target@0.1.0",
+   "chip_url": null
+  },
+  {
+   "detection_id": "SRV-20260912-900-D0005",
+   "class": "debris_other",
+   "confidence": 55.4,
+   "alert_tier": "review",
+   "position": {
+    "lat": 13.079978,
+    "lon": 80.308204,
+    "depth_m": 18.2,
+    "uncertainty_m": null
+   },
+   "footprint": [
+    [
+     13.079986,
+     80.308203
+    ],
+    [
+     13.079983,
+     80.30821
+    ],
+    [
+     13.07997,
+     80.308204
+    ],
+    [
+     13.079974,
+     80.308197
+    ]
+   ],
+   "dimensions": {
+    "length_m": 1.6,
+    "width_m": 1.2,
+    "area_m2": 1.87,
+    "height_m": null
+   },
+   "orientation_deg": 26.3,
+   "sonar_ref": {
+    "source_file": "mock_line.xtf",
+    "side": "starboard",
+    "ping_start": 1370,
+    "ping_end": 1381,
+    "ground_range_m": 29.15,
+    "time_utc": "2026-09-12T05:12:19.60Z"
+   },
+   "scores": {
+    "detector": 0.4942,
+    "dropout_penalty": 0.0,
+    "motion_penalty": 0.0,
+    "fused": 0.554
+   },
+   "quality_flags": [],
+   "n_views": 1,
+   "review": {
+    "status": "pending",
+    "reviewer": null,
+    "reject_reason": null,
+    "note": null,
+    "updated_utc": null
+   },
+   "model_version": "classical-bright-target@0.1.0",
+   "chip_url": null
+  },
+  {
+   "detection_id": "SRV-20260912-900-D0006",
+   "class": "ghost_net",
+   "confidence": 44.9,
+   "alert_tier": "anomaly",
+   "position": {
+    "lat": 13.080313,
+    "lon": 80.308721,
+    "depth_m": 18.2,
+    "uncertainty_m": null
+   },
+   "footprint": [
+    [
+     13.080323,
+     80.30872
+    ],
+    [
+     13.080316,
+     80.30873
+    ],
+    [
+     13.080305,
+     80.308722
+    ],
+    [
+     13.080312,
+     80.308712
+    ]
+   ],
+   "dimensions": {
+    "length_m": 1.6,
+    "width_m": 1.2,
+    "area_m2": 1.84,
+    "height_m": null
+   },
+   "orientation_deg": 37.2,
+   "sonar_ref": {
+    "source_file": "mock_line.xtf",
+    "side": "port",
+    "ping_start": 1650,
+    "ping_end": 1661,
+    "ground_range_m": 32.23,
+    "time_utc": "2026-09-12T05:12:47.60Z"
+   },
+   "scores": {
+    "detector": 0.4947,
+    "dropout_penalty": 0.0,
+    "motion_penalty": 0.0,
+    "fused": 0.449
+   },
+   "quality_flags": [],
+   "n_views": 1,
+   "review": {
+    "status": "pending",
+    "reviewer": null,
+    "reject_reason": null,
+    "note": null,
+    "updated_utc": null
+   },
+   "model_version": "classical-bright-target@0.1.0",
+   "chip_url": null
+  },
+  {
+   "detection_id": "SRV-20260912-900-D0007",
+   "class": "cylinder",
+   "confidence": 27.3,
+   "alert_tier": "hidden",
+   "position": {
+    "lat": 13.079697,
+    "lon": 80.308489,
+    "depth_m": 18.2,
+    "uncertainty_m": null
+   },
+   "footprint": [
+    [
+     13.079705,
+     80.308491
+    ],
+    [
+     13.079699,
+     80.308496
+    ],
+    [
+     13.079691,
+     80.308486
+    ],
+    [
+     13.079696,
+     80.308481
+    ]
+   ],
+   "dimensions": {
+    "length_m": 1.5,
+    "width_m": 1.2,
+    "area_m2": 1.8,
+    "height_m": null
+   },
+   "orientation_deg": 48.2,
+   "sonar_ref": {
+    "source_file": "mock_line.xtf",
+    "side": "starboard",
+    "ping_start": 1930,
+    "ping_end": 1941,
+    "ground_range_m": 35.3,
+    "time_utc": "2026-09-12T05:13:15.60Z"
+   },
+   "scores": {
+    "detector": 0.5056,
+    "dropout_penalty": 0.0,
+    "motion_penalty": 0.0,
+    "fused": 0.273
+   },
+   "quality_flags": [],
+   "n_views": 1,
+   "review": {
+    "status": "pending",
+    "reviewer": null,
+    "reject_reason": null,
+    "note": null,
+    "updated_utc": null
+   },
+   "model_version": "classical-bright-target@0.1.0",
+   "chip_url": null
+  },
+  {
+   "detection_id": "SRV-20260912-900-D0008",
+   "class": "ghost_net",
+   "confidence": 91.5,
+   "alert_tier": "hazard",
+   "position": {
+    "lat": 13.07986,
+    "lon": 80.309312,
+    "depth_m": 18.2,
+    "uncertainty_m": null
+   },
+   "footprint": [
+    [
+     13.07986,
+     80.309308
+    ],
+    [
+     13.079863,
+     80.309309
+    ],
+    [
+     13.07986,
+     80.309317
+    ],
+    [
+     13.079857,
+     80.309316
+    ]
+   ],
+   "dimensions": {
+    "length_m": 0.88,
+    "width_m": 0.37,
+    "area_m2": 0.12,
+    "height_m": null
+   },
+   "orientation_deg": 101.7,
+   "sonar_ref": {
+    "source_file": "mock_line.xtf",
+    "side": "port",
+    "ping_start": 2282,
+    "ping_end": 2288,
+    "ground_range_m": 48.82,
+    "time_utc": "2026-09-12T05:13:50.50Z"
+   },
+   "scores": {
+    "detector": 0.4856,
+    "dropout_penalty": 0.0,
+    "motion_penalty": 0.0,
+    "fused": 0.915
+   },
+   "quality_flags": [],
+   "n_views": 1,
+   "review": {
+    "status": "pending",
+    "reviewer": null,
+    "reject_reason": null,
+    "note": null,
+    "updated_utc": null
+   },
+   "model_version": "classical-bright-target@0.1.0",
+   "chip_url": null
+  }
+ ]
+}

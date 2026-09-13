@@ -1,0 +1,62 @@
+/*
+ * Design tokens (ADR-014). Class colours and tier styles come from docs/wireframes/README.md §4;
+ * keep them in sync with src/tokens.ts, which the map and exports use.
+ */
+:root {
+  /* detection classes */
+  --class-ghost-net: #e5484d;
+  --class-shipwreck: #8e4ec6;
+  --class-pipe: #f76b15;
+  --class-cylinder: #ffb224;
+  --class-debris-other: #0090ff;
+  --class-unknown-anomaly: #d6409f;
+
+  /* tiers */
+  --tier-hazard-outline: #ffffff;
+  --tier-hidden: #8b8d98;
+
+  /* surfaces and text */
+  --color-bg: #f5f6f8;
+  --color-surface: #ffffff;
+  --color-surface-muted: #eceef2;
+  --color-border: #d4d7de;
+  --color-text: #1b1d24;
+  --color-text-muted: #5c606b;
+  --color-accent: #0b5cad;
+  --color-focus: #0b5cad;
+  --color-warning: #b35c00;
+  --color-danger: #c2272d;
+  --color-track: #1b1d24;
+
+  /* spacing and layout */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --panel-left: 280px;
+  --panel-right: 360px;
+  --radius: 6px;
+
+  /* typography */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --text-sm: 0.8125rem;
+  --text-md: 0.9375rem;
+  --text-lg: 1.125rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #111318;
+    --color-surface: #1a1d24;
+    --color-surface-muted: #232733;
+    --color-border: #343a48;
+    --color-text: #eceef2;
+    --color-text-muted: #a3a8b5;
+    --color-accent: #6fb1ff;
+    --color-focus: #6fb1ff;
+    --color-track: #eceef2;
+  }
+}

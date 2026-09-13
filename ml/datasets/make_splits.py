@@ -122,9 +122,11 @@ def assign_sites(
     result = {}
     for i, site in enumerate(sites):
         allowed = [s for s in splits if not (s == "train" and site in blocked)]
-        split = splits[i] if i < len(splits) and splits[i] in allowed else max(
-            allowed, key=lambda s: targets[s] - amount[s] / total
-        )  # fmt: skip
+        split = (
+            splits[i]
+            if i < len(splits) and splits[i] in allowed
+            else max(allowed, key=lambda s: targets[s] - amount[s] / total)
+        )
         result[site] = split
         amount[split] += site_sizes[site]
     return result
@@ -170,10 +172,15 @@ def sha256(path: Path) -> str:
 
 
 def build(
-    real_roots: list[Path], synthetic_root: Path | None, out: Path, manifests: Path,
-    version: str, min_correlation: float = 0.97, link: bool = True,
+    real_roots: list[Path],
+    synthetic_root: Path | None,
+    out: Path,
+    manifests: Path,
+    version: str,
+    min_correlation: float = 0.97,
+    link: bool = True,
     not_train: tuple[str, ...] = (),
-) -> dict[str, Any]:  # fmt: skip
+) -> dict[str, Any]:
     real: list[Item] = []
     for root in real_roots:
         real += collect(root, root.name)
@@ -224,12 +231,17 @@ def build(
                     dst.hardlink_to(src)
                 except OSError:
                     shutil.copy2(src, dst)
-        files.append({
-            "image": f"images/{it.split}/{name}{it.image.suffix}",
-            "label": f"labels/{it.split}/{name}.txt",
-            "sha256": sha256(it.image), "split": it.split, "site": it.site,
-            "dataset": it.dataset, "objects": dict(it.objects),
-        })  # fmt: skip
+        files.append(
+            {
+                "image": f"images/{it.split}/{name}{it.image.suffix}",
+                "label": f"labels/{it.split}/{name}.txt",
+                "sha256": sha256(it.image),
+                "split": it.split,
+                "site": it.site,
+                "dataset": it.dataset,
+                "objects": dict(it.objects),
+            }
+        )
 
     splits: dict[str, Any] = {}
     for split in sorted({f["split"] for f in files}):
@@ -264,11 +276,16 @@ def build(
 
 
 def stats_report(manifest: dict[str, Any], items: list[Item]) -> str:
-    lines = [f"# sonar-seg {manifest['version']} — dataset statistics", "",
-             f"Generated {manifest['created_utc']} by `ml/datasets/make_splits.py`.", "",
-             "## Images and objects per split", "",
-             "| Split | Sites | Images | " + " | ".join(CLASS_IDS) + " |",
-             "|---|---|---|" + "---|" * len(CLASS_IDS)]  # fmt: skip
+    lines = [
+        f"# sonar-seg {manifest['version']} — dataset statistics",
+        "",
+        f"Generated {manifest['created_utc']} by `ml/datasets/make_splits.py`.",
+        "",
+        "## Images and objects per split",
+        "",
+        "| Split | Sites | Images | " + " | ".join(CLASS_IDS) + " |",
+        "|---|---|---|" + "---|" * len(CLASS_IDS),
+    ]
     for split, info in manifest["splits"].items():
         counts = " | ".join(str(info["objects"].get(c, 0)) for c in CLASS_IDS)
         lines.append(f"| {split} | {len(info['sites'])} | {info['images']} | {counts} |")
@@ -296,10 +313,16 @@ def stats_report(manifest: dict[str, Any], items: list[Item]) -> str:
         width, height = np.median(arr[:, 0]), np.median(arr[:, 1])
         longest = np.percentile(arr.max(axis=1), 90)
         lines.append(f"| {cls} | {len(arr)} | {width:.3f} | {height:.3f} | {longest:.3f} |")
-    lines += ["", "## Leakage check", "",
-              f"Passed: no site in more than one split; no cross-split image pairs at or above "
-              f"thumbnail correlation {manifest['leakage_check']['min_correlation']}.", "",
-              f"Test split hash (frozen): `{manifest['test_hash_frozen']}`", ""]  # fmt: skip
+    lines += [
+        "",
+        "## Leakage check",
+        "",
+        f"Passed: no site in more than one split; no cross-split image pairs at or above "
+        f"thumbnail correlation {manifest['leakage_check']['min_correlation']}.",
+        "",
+        f"Test split hash (frozen): `{manifest['test_hash_frozen']}`",
+        "",
+    ]
     return "\n".join(lines)
 
 

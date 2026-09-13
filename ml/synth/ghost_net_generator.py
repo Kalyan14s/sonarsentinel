@@ -179,9 +179,14 @@ def cast_shadow(obj: np.ndarray, length_px: int, direction: int) -> np.ndarray:
 
 
 def sample_params(
-    rng: np.random.Generator, tile_px: int, res_m: float, background: Path, group: str,
-    image_shape: tuple[int, int], seed: int,
-) -> NetParams:  # fmt: skip
+    rng: np.random.Generator,
+    tile_px: int,
+    res_m: float,
+    background: Path,
+    group: str,
+    image_shape: tuple[int, int],
+    seed: int,
+) -> NetParams:
     h, w = image_shape
     crop_x = int(rng.integers(0, max(w - tile_px, 0) + 1))
     crop_y = int(rng.integers(0, max(h - tile_px, 0) + 1))
@@ -196,16 +201,29 @@ def sample_params(
     ground_range = float(max(abs(crop_x + cx - w / 2) * res_m, 5.0))
     shadow_px = int(round(height * ground_range / max(altitude - height, 0.5) / res_m))
     return NetParams(
-        seed=seed, tile_px=tile_px, res_m=res_m, background=background.as_posix(),
-        background_group=group, crop_xy=(crop_x, crop_y), side=side, center_xy=(cx, cy),
-        mesh_cm=float(rng.uniform(5.0, 30.0)), crumple_px=float(rng.uniform(6.0, 15.0)),
-        clump_length_m=length_m, clump_width_m=width_m,
-        clump_angle_deg=float(rng.uniform(0, 180)), reflectivity=float(rng.uniform(30, 120)),
-        burial_fraction=float(rng.uniform(0.0, 0.6)), height_m=height, altitude_m=altitude,
-        ground_range_m=ground_range, shadow_length_px=min(shadow_px, tile_px // 3),
-        shadow_factor=float(rng.uniform(0.25, 0.6)), n_ropes=int(rng.integers(0, 4)),
+        seed=seed,
+        tile_px=tile_px,
+        res_m=res_m,
+        background=background.as_posix(),
+        background_group=group,
+        crop_xy=(crop_x, crop_y),
+        side=side,
+        center_xy=(cx, cy),
+        mesh_cm=float(rng.uniform(5.0, 30.0)),
+        crumple_px=float(rng.uniform(6.0, 15.0)),
+        clump_length_m=length_m,
+        clump_width_m=width_m,
+        clump_angle_deg=float(rng.uniform(0, 180)),
+        reflectivity=float(rng.uniform(30, 120)),
+        burial_fraction=float(rng.uniform(0.0, 0.6)),
+        height_m=height,
+        altitude_m=altitude,
+        ground_range_m=ground_range,
+        shadow_length_px=min(shadow_px, tile_px // 3),
+        shadow_factor=float(rng.uniform(0.25, 0.6)),
+        n_ropes=int(rng.integers(0, 4)),
         n_floats=int(rng.integers(0, 6)),
-    )  # fmt: skip
+    )
 
 
 def render_tile(background: np.ndarray, p: NetParams) -> tuple[np.ndarray, np.ndarray]:
@@ -219,9 +237,13 @@ def render_tile(background: np.ndarray, p: NetParams) -> tuple[np.ndarray, np.nd
     mesh = mesh_texture(rng, size, p.mesh_cm / 100.0 / p.res_m, p.clump_angle_deg)
     mesh = crumple(rng, mesh, p.crumple_px)
     envelope = clump_envelope(
-        rng, size, p.center_xy, p.clump_length_m / p.res_m, p.clump_width_m / p.res_m,
+        rng,
+        size,
+        p.center_xy,
+        p.clump_length_m / p.res_m,
+        p.clump_width_m / p.res_m,
         p.clump_angle_deg,
-    )  # fmt: skip
+    )
     ropes, floats = add_ropes_and_floats(rng, envelope, p.n_ropes, p.n_floats)
 
     burial_noise = _smooth_noise(rng, (size, size), 6.0)
@@ -242,9 +264,15 @@ def render_tile(background: np.ndarray, p: NetParams) -> tuple[np.ndarray, np.nd
 
 
 def generate(
-    backgrounds: list[tuple[Path, str]], out: Path, count: int, *, seed: int = 0,
-    tile_px: int = 640, res_m: float = 0.10, split: str = "train",
-) -> dict[str, Any]:  # fmt: skip
+    backgrounds: list[tuple[Path, str]],
+    out: Path,
+    count: int,
+    *,
+    seed: int = 0,
+    tile_px: int = 640,
+    res_m: float = 0.10,
+    split: str = "train",
+) -> dict[str, Any]:
     """Write ``count`` tiles under ``out/split``; returns a summary."""
     import cv2
 
@@ -301,14 +329,28 @@ def main() -> None:
     holdout = [b for b in all_backgrounds if b[1] in set(args.holdout_groups)]
     train = [b for b in all_backgrounds if b[1] not in set(args.holdout_groups)]
     summaries = [
-        generate(train, args.out, args.count, seed=args.seed, tile_px=args.tile_px,
-                 res_m=args.res_m, split="train"),
-    ]  # fmt: skip
+        generate(
+            train,
+            args.out,
+            args.count,
+            seed=args.seed,
+            tile_px=args.tile_px,
+            res_m=args.res_m,
+            split="train",
+        ),
+    ]
     if args.holdout_count and holdout:
         summaries.append(
-            generate(holdout, args.out, args.holdout_count, seed=args.seed + 1,
-                     tile_px=args.tile_px, res_m=args.res_m, split="holdout")
-        )  # fmt: skip
+            generate(
+                holdout,
+                args.out,
+                args.holdout_count,
+                seed=args.seed + 1,
+                tile_px=args.tile_px,
+                res_m=args.res_m,
+                split="holdout",
+            )
+        )
     (args.out / "summary.json").write_text(json.dumps(summaries, indent=2), encoding="utf-8")
     print(json.dumps(summaries, indent=2))
 

@@ -82,8 +82,10 @@ def run_qa(
     raw = cv2.cvtColor(_to_u8(_waterfall(log.port, log.starboard)), cv2.COLOR_GRAY2BGR)
     recorded = log.nav["altitude_m"].to_numpy(np.float64)
     for row in range(log.n_pings):
-        for sample, colour in ((track.first_return[row], (0, 0, 255)),
-                               (recorded[row] / slant[row] * n_samples, (0, 255, 0))):  # fmt: skip
+        for sample, colour in (
+            (track.first_return[row], (0, 0, 255)),
+            (recorded[row] / slant[row] * n_samples, (0, 255, 0)),
+        ):
             if np.isfinite(sample) and 0 <= sample < n_samples:
                 s = int(sample)
                 raw[row, n_samples - 1 - s] = colour
@@ -97,9 +99,12 @@ def run_qa(
     repaired = repair_dropouts(
         log.port, log.starboard, dropout, max_gap=pre["dropout"]["max_inpaint_gap_pings"]
     )
-    gain = normalize_gain(repaired.port, repaired.starboard,
-                          along_track_window_pings=pre["gain"]["along_track_window_pings"],
-                          clip_percentiles=pre["gain"]["clip_percentiles"])  # fmt: skip
+    gain = normalize_gain(
+        repaired.port,
+        repaired.starboard,
+        along_track_window_pings=pre["gain"]["along_track_window_pings"],
+        clip_percentiles=pre["gain"]["clip_percentiles"],
+    )
     assert gain.port is not None and gain.starboard is not None
     cv2.imwrite(str(target / "2_gain.png"), _fit(_waterfall(gain.port, gain.starboard)))
 
@@ -118,13 +123,19 @@ def run_qa(
     cv2.imwrite(str(target / "5_masks.png"), _fit(overlay))
 
     summary: dict[str, Any] = {
-        "source": log.source_file, "pings": log.n_pings, "samples_per_channel": n_samples,
-        "image_shape": list(chunk.image.shape), "nadir_col": chunk.nadir_col,
-        "warnings": chunk.warnings, "quality_events": len(chunk.quality_events),
-        "dropout_pings": int(dropout.sum()), "masked_pings": int(repaired.masked.sum()),
-        "tracked_altitude_m": _stats(track.altitude_m), "recorded_altitude_m": _stats(recorded),
+        "source": log.source_file,
+        "pings": log.n_pings,
+        "samples_per_channel": n_samples,
+        "image_shape": list(chunk.image.shape),
+        "nadir_col": chunk.nadir_col,
+        "warnings": chunk.warnings,
+        "quality_events": len(chunk.quality_events),
+        "dropout_pings": int(dropout.sum()),
+        "masked_pings": int(repaired.masked.sum()),
+        "tracked_altitude_m": _stats(track.altitude_m),
+        "recorded_altitude_m": _stats(recorded),
         "altitude_used_m": _stats(chunk.altitude_m),
-    }  # fmt: skip
+    }
     if log.has_navigation:
         cleaned = clean_navigation(log.nav)
         summary["invalid_fixes"] = int(cleaned.invalid.sum())
@@ -154,8 +165,11 @@ def _stats(values: np.ndarray) -> dict[str, float | None]:
     v = v[np.isfinite(v)]
     if not v.size:
         return {"median": None, "p5": None, "p95": None}
-    return {"median": round(float(np.median(v)), 2), "p5": round(float(np.percentile(v, 5)), 2),
-            "p95": round(float(np.percentile(v, 95)), 2)}  # fmt: skip
+    return {
+        "median": round(float(np.median(v)), 2),
+        "p5": round(float(np.percentile(v, 5)), 2),
+        "p95": round(float(np.percentile(v, 95)), 2),
+    }
 
 
 def main() -> None:

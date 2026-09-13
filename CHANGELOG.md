@@ -7,7 +7,25 @@ Categories: **Added** · **Changed** · **Deprecated** · **Removed** · **Fixed
 
 ## [Unreleased]
 
-*(Phase 2 merged to `main` in `8d13648`. Sprint 2 / Phase 3 in progress on branch `sprint-2/preprocess-data`.)*
+*(Phase 2 merged to `main` in `8d13648`, Phase 3 in `4237954`. Sprint 3 / Phase 4 on `main`.)*
+
+### Added (Sprint 3)
+- Thin slice (Gate G2): `pipeline.py` orchestrator (ST-075) runs S0–S7, detection, merge, measurement, scoring and report per file with job events (progress, track, warning, detection, done); `sonarsentinel detect` writes `report.json` and `report.csv` (ST-074)
+- Detection: `Detector` interface, YOLO11-seg adapter with SAHI slicing (ST-052), rule-based stand-in `classical-bright-target@0.1.0`, merge/dedupe across tiles and chunks (ST-054), PatchCore anomaly model with `unknown_anomaly` regions (ST-053)
+- Measurements: footprint polygon, length/width, orientation from heading, depth (ST-033)
+- Report builder and JSON/CSV export (report schema 1.0), alert tiers, quality flags per detection
+- FastAPI skeleton with `/api/v1/health`, `/api/v1/models`, `/docs` (ST-080); mock API with canned survey, filters, paging, CSV, review `PATCH` and WebSocket replay with `seq` resume (ST-087); `sonarsentinel serve [--mock]`
+- Dashboard shell (ST-090): React + TypeScript + Vite, routing for all screens, design tokens, typed API client, generated report types, Live Map against the mock API
+- ML: `ml/evaluate.py` (AP@50 box/mask, PR curves, confusion, bootstrap CI; ST-057), synthetic pipe and cylinder generators (ST-017), `prepare_yolo.py`, `train_detector.py`, `train_anomaly.py`, `compare_sahi.py`
+- Integration test ST-110: synthetic XTF → CLI → schema-valid JSON/CSV, chunk-overlap dedupe, determinism, image-only path
+- Sprint 3 plan; ADR-016 (own PatchCore, rule-based stand-in, CPU baselines)
+
+### Changed (Sprint 3)
+- `detect --detector auto` (default) uses trained YOLO11-seg weights when present, otherwise the rule-based stand-in; stand-in reports carry the `RULE_BASED_DETECTOR` warning
+- CI installs the `api` extra and runs the frontend lint, typecheck, tests and build; `requirements-ml.txt` drops anomalib and documents the verified CPU stack
+
+### Fixed (Sprint 3)
+- Across-track gain: cap each column at its 99th percentile before the running mean, so bright objects no longer darken their own range bins
 
 ### Added (Sprint 2)
 - Navigation cleaning (ST-032): speed-gated invalid-fix detection, UTM Savitzky–Golay smoothing, circular heading smoothing, COG fallback

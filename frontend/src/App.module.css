@@ -1,0 +1,25 @@
+.shell {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100vh;
+}
+
+.main {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.skip {
+  position: absolute;
+  left: -999px;
+  top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  color: var(--color-text);
+  z-index: 1000;
+}
+
+.skip:focus {
+  left: var(--space-2);
+}

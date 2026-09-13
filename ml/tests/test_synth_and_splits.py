@@ -111,8 +111,9 @@ def test_build_splits_manifest_and_leakage(tmp_path: Path) -> None:
     root = _interim(tmp_path, {"2010": 9, "2015": 5, "2017": 4, "2018": 12, "2021": 3}, seed=1)
     synth_root = tmp_path / "ghost_net" / "1.0.0"
     generate(find_backgrounds(root), synth_root, 2, tile_px=96, res_m=0.05)
-    manifest = build([root], synth_root, tmp_path / "out", tmp_path / "manifests", "0.0.1",
-                     min_correlation=0.97)  # fmt: skip
+    manifest = build(
+        [root], synth_root, tmp_path / "out", tmp_path / "manifests", "0.0.1", min_correlation=0.97
+    )
     splits = manifest["splits"]
     assert {"train", "val", "calib", "test"} <= set(splits)
     real_sites = [s for info in splits.values() for s in info["sites"] if s.startswith("mine_sss")]
@@ -144,7 +145,10 @@ def test_thumbnail_correlation_finds_near_duplicates(tmp_path: Path) -> None:
         def __init__(self, image: Path, split: str) -> None:
             self.image, self.split = image, split
 
-    items = [It(tmp_path / "a.png", "train"), It(tmp_path / "b.png", "test"),
-             It(tmp_path / "c.png", "val")]  # fmt: skip
+    items = [
+        It(tmp_path / "a.png", "train"),
+        It(tmp_path / "b.png", "test"),
+        It(tmp_path / "c.png", "val"),
+    ]
     pairs = cross_split_duplicates(items, 0.97)  # type: ignore[arg-type]
     assert len(pairs) == 1 and pairs[0][0].endswith("a.png")

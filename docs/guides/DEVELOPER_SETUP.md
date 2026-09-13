@@ -77,6 +77,38 @@ pip install -r backend/requirements-ml.txt
 
 > Pin exact versions of `torch`, `ultralytics`, `anomalib` and `lightning` in `backend/requirements-ml.lock.txt` once a working combination is found. anomalib is sensitive to torch/lightning versions.
 
+**Verified combination (2026-09-13, Windows 11, CPU only):** `torch 2.14.0+cpu`, `torchvision 0.29.0+cpu`, `ultralytics 8.4.150`, `sahi 0.12.6`, `onnxruntime 1.30.0`, `scikit-learn 1.9.1`, `lightgbm 4.7.0`, with NumPy 2.4.6 and OpenCV 5.0 unchanged. CPU wheels:
+
+```bash
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+```
+
+- **anomalib is not needed:** PatchCore is implemented in `sonarsentinel/detect/anomaly.py` ([ADR-016](../architecture/08-architecture-decisions.md#adr-016--sprint-3-ml-stack-own-patchcore-rule-based-stand-in-detector-cpu-baselines)).
+- **Windows "OMP: Error #15":** conda NumPy/SciPy and pip PyTorch load two OpenMP runtimes. The training scripts set `KMP_DUPLICATE_LIB_OK=TRUE`; set it yourself in a shell that imports both (`$env:KMP_DUPLICATE_LIB_OK="TRUE"` in PowerShell).
+- **Training and evaluation (Sprint 3):**
+
+```bash
+python ml/datasets/prepare_yolo.py --variant real            # 3-channel YOLO folders from the manifest
+python ml/train_detector.py --data data/processed/yolo/0.1.0-real/data.yaml \
+    --model models/pretrained/yolo11s-seg.pt --name yolo11s-seg-sonar-real --version 0.1.0 --epochs 20 --batch 8
+python ml/evaluate.py --data data/processed/yolo/0.1.0-real --split val \
+    --model models/detector/yolo11s-seg-sonar-real/0.1.0/best.pt --out models/detector/yolo11s-seg-sonar-real/0.1.0/eval_val
+python ml/train_anomaly.py --holdout-groups 2017 --version 0.1.0   # PatchCore memory bank + AUROC
+```
+
+### 3.2.1 Frontend (dashboard)
+
+Node.js 22 LTS. From `frontend/`:
+
+```bash
+npm ci
+npm run dev          # http://localhost:5173, proxies /api and /ws to SONARSENTINEL_API (default :8001)
+npm run lint && npm run typecheck && npm test && npm run build
+npm run gen:types    # regenerate src/api/report-schema.ts after changing the report JSON Schema
+```
+
+For frontend work without the full backend, run the mock API: `sonarsentinel serve --mock --port 8001` (needs `pip install -e "backend[api]"`).
+
 ### 3.3 Install the package and hooks
 
 ```bash

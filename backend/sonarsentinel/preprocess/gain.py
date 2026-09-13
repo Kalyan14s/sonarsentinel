@@ -39,7 +39,11 @@ def flatten_across_track(
 
     x = np.asarray(side, dtype=np.float32)
     size = max(1, min(window_pings, x.shape[0]))
-    profile = uniform_filter1d(x, size, axis=0, mode="nearest")
+    # Cap each column at its 99th percentile before averaging: otherwise a very bright object
+    # inflates the running mean and darkens the seabed for ±window/2 pings around it, which also
+    # shifts the display percentiles of the whole chunk.
+    cap = np.percentile(x, 99.0, axis=0)
+    profile = uniform_filter1d(np.minimum(x, cap), size, axis=0, mode="nearest")
     floor = max(float(np.median(profile)) * 1e-3, 1e-6)
     return np.asarray(x / np.maximum(profile, floor), dtype=np.float32)
 

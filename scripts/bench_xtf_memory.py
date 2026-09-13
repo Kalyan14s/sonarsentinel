@@ -59,8 +59,17 @@ def main() -> None:
         return
     if not args.path.exists():
         started = time.perf_counter()
-        cmd = [sys.executable, __file__, "--path", str(args.path), "--size-gb", str(args.size_gb),
-               "--samples", str(args.samples), "--generate-only"]  # fmt: skip
+        cmd = [
+            sys.executable,
+            __file__,
+            "--path",
+            str(args.path),
+            "--size-gb",
+            str(args.size_gb),
+            "--samples",
+            str(args.samples),
+            "--generate-only",
+        ]
         subprocess.run(cmd, check=True)
         print(f"generated {args.path} in {time.perf_counter() - started:.0f} s")
 

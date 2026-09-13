@@ -52,7 +52,8 @@ def export_tiles(
             skip_if_masked_fraction_gt=tiling["skip_if_masked_fraction_gt"],
         ):
             name = f"{source.stem}_c{chunk.chunk_id:03d}_t{tile.index:04d}"
-            cv2.imwrite(str(out / f"{name}.png"), pixels[..., ::-1])  # RGB order kept on disk
+            # Same channel order on disk as prepare_yolo.py writes and the YOLO adapter feeds.
+            cv2.imwrite(str(out / f"{name}.png"), pixels)
             rows = np.arange(tile.row, min(tile.row + tile.size, chunk.image.shape[0]))
             meta = {
                 "source_file": log.source_file,

@@ -17,6 +17,7 @@ import pandas as pd
 
 from sonarsentinel.errors import ValidationError
 from sonarsentinel.geo.georef import GeoFrame
+from sonarsentinel.geo.measure import ImageGeometry
 from sonarsentinel.geo.navigation import clean_navigation
 from sonarsentinel.ingest.chunking import iter_chunks
 from sonarsentinel.ingest.models import SonarLog
@@ -67,6 +68,19 @@ class ProcessedChunk:
             row_to_ping=self.row_to_ping - self.ping_offset,
             nadir_col=self.nadir_col,
             ground_res_m=self.ground_res_m,
+        )
+
+    def image_geometry(self) -> ImageGeometry:
+        """Geometry for :func:`sonarsentinel.geo.measure.measure_mask` on this image."""
+        return ImageGeometry(
+            ground_res_m=self.ground_res_m,
+            nadir_col=self.nadir_col,
+            row_to_ping=self.row_to_ping - self.ping_offset,
+            ping_offset=self.ping_offset,
+            frame=self.geo_frame() if self.geotagged else None,
+            heading_deg=self.nav["heading_deg"].to_numpy(np.float64),
+            sensor_depth_m=self.nav["sensor_depth_m"].to_numpy(np.float64),
+            altitude_m=self.altitude_m,
         )
 
 

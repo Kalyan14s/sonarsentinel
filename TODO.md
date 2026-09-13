@@ -19,8 +19,8 @@ The single checklist for the whole project, from documentation to hackathon fina
 flowchart LR
     P0["Phase 0<br/>Docs & design<br/>✅ complete"] --> P1["Phase 1<br/>Sprint 0 · Setup<br/>✅ complete"]
     P1 --> P2["Phase 2<br/>Sprint 1 · Ingest & Geo<br/>✅ complete"]
-    P2 --> P3["Phase 3<br/>Sprint 2 · Preprocess & Data<br/>🟡 in progress"]
-    P3 --> P4["Phase 4<br/>Sprint 3 · Models & thin slice<br/>M3 · G2"]
+    P2 --> P3["Phase 3<br/>Sprint 2 · Preprocess & Data<br/>✅ complete"]
+    P3 --> P4["Phase 4<br/>Sprint 3 · Models & thin slice<br/>M3 · G2 · 🟡 in progress"]
     P4 --> P5["Phase 5<br/>Sprint 4 · Scoring, reports, API<br/>M4 · G3"]
     P5 --> P6["Phase 6<br/>Sprint 5 · Dashboard<br/>M5 · G4 · P0 freeze"]
     P6 --> P7["Phase 7<br/>Sprint 6 · Hardening & demo<br/>M6 · G5"]
@@ -32,7 +32,7 @@ flowchart LR
 | [0](#phase-0--documentation--design) | — | → 2026-09-13 | Docs baseline | Complete, verified documentation | 20 | 20 |
 | [1](#phase-1--sprint-0--project-setup) | S0 | 09-14 → 09-18 | M0 · IS (idea PDF due 09-30) | Team can build, test, collaborate; SIH idea submitted | 25 | 25 |
 | [2](#phase-2--sprint-1--ingest--geotagging) | S1 | 09-21 → 09-25 | M1 · G1 | Read sonar logs and place them correctly on a map | 14 | 14 |
-| [3](#phase-3--sprint-2--preprocessing--training-data) | S2 | 09-28 → 10-02 | M2 | Clean, tiled sonar data; training data ready | 28 | 12 |
+| [3](#phase-3--sprint-2--preprocessing--training-data) | S2 | 09-28 → 10-02 | M2 | Clean, tiled sonar data; training data ready | 12 | 12 |
 | [4](#phase-4--sprint-3--models--thin-slice) | S3 | 10-05 → 10-09 | M3 · G2 | Trained models; CLI report end to end | 20 | 0 |
 | [5](#phase-5--sprint-4--scoring-reports--api) | S4 | 10-12 → 10-16 | M4 · G3 | Trustworthy confidence; reports; upload + jobs API | 22 | 0 |
 | [6](#phase-6--sprint-5--dashboard-p0-freeze) | S5 | 10-19 → 10-23 | M5 · G4 | Live dashboard end to end; P0 freeze | 19 | 0 |
@@ -154,21 +154,9 @@ flowchart LR
 
 **Dates:** 2026-09-28 → 10-02 · **Milestone:** M2 · **Sprint goal:** clean, normalised, tiled sonar data; training data ready.
 
-> **Status:** 🟡 started 2026-09-13 on branch `sprint-2/preprocess-data` ([Sprint 2 plan](docs/planning/SPRINT_2_PLAN.md)).
-
-### Carried over from Phase 2
-- [ ] Get the team ID from the SIH portal and add it to the deck (team name Vashishta is already on it); re-export the PDF *(moved from Phase 1, then Phase 2)* — R6
-- [ ] Upload the final idea PDF on the SIH portal: deadline 30 Sept *(moved from Phase 1, then Phase 2)* — R6
-- [ ] Send the S3Simulator permission request ([draft](docs/communications/OUTREACH_DRAFTS.md#4-s3simulator-authors--dataset-permission-optional)); its sample files stay local-only until permission is granted *(moved from Phase 1, then Phase 2)* — R1
-- [ ] **ST-010** Download AI4Shipwrecks; convert masks to YOLO-seg — P0 · R1 · 3 pts *(moved from Phase 2)*. *Converter ready and unit-tested (`ml/datasets/convert_ai4shipwrecks.py`). **Open:** download in a browser from Deep Blue (scripts get HTTP 403), check the mask encoding, run the converter, inspect the overlays*
-- [ ] **ST-011** Mine SSS dataset; MILCO → `cylinder`; review NOMBO — P0 · R1 · 3 pts *(moved from Phase 2)*. *Converted: 1,170 images, 437 MILCO → `cylinder`, overlays aligned. **Open:** R1 reviews the 231 NOMBO crops in `data/interim/mine_sss/nombo_review.csv`*
-- [ ] **ST-013** ≥ 3 NOAA/USGS XTF surveys incl. ≥ 1 charted wreck, with provenance — P0 · R3 · 3 pts *(moved from Phase 2)*. *Have 1 survey: 4 USGS Grand Bay 2015 lines (Klein 3900) in DVC with provenance. **Open:** 2 more surveys, a second sonar model, and a survey over a charted wreck (TD-10)*
-- [ ] Freeze API spec and report schema v1.0; agree mock server approach (**Gate G1**) — R4, R3 *(moved from Phase 2)*. *Prepared: `report-1.0.schema.json` with a validated example and rule tests. **Open:** team approval, mock-server decision, tag `contracts-1.0`*
-- [ ] Answer PRD Q7: datum/CRS for official reports — R3 *(moved from Phase 2)*. *Proposed: WGS84 geographic ([ADR-015](docs/architecture/08-architecture-decisions.md#adr-015--report-datum-and-crs-wgs84-geographic-prd-q7)); confirm with NIOT*
-- [ ] G1 passed: contracts approved *(M1 exit criterion, moved from Phase 2)*
+> **✅ Phase 3 closed (2026-09-13).** Navigation cleaning, preprocessing S2–S7, site-grouped splits and synthetic ghost nets merged to `main` (`4237954`), CI green ([Sprint 2 plan](docs/planning/SPRINT_2_PLAN.md)). 16 open items that need people, external data or team approval were **carried over to [Phase 4](#phase-4--sprint-3--models--thin-slice)**: 3 team items, ST-010, ST-011, ST-013, Gate G1 (freeze + pass), PRD Q7, ST-014, ST-048 review, annotation calibration, manifest publication, M2 demo and two M2 exit criteria.
 
 ### Data & labelling
-- [ ] **ST-014** CVAT/Label Studio + SAM 2 (not SAM 3); label ≥ 100 real tiles (10% double-labelled) — P0 · R2 · 5 pts. *Tile source ready: `ml/datasets/xtf_to_tiles.py` turns XTF into preprocessed 3-channel 640 px tiles with JSON sidecars (chunk/tile offsets, ping range, corner lat/lon); tested on a USGS line. **Open:** set up the labelling tool and label ≥ 100 tiles (people); more real surveys from ST-013 help*
 - [x] **ST-015** Site-grouped splits, dataset manifest, stats report — P0 · R1 · 3 pts. *`ml/datasets/make_splits.py`: exhaustive site assignment (train 70 · val 10 · calib 5 · test 15%), synthetic tiles train-only, holdout background site (2017) kept out of train; automated leakage check (site overlap + 64 × 64 thumbnail correlation ≥ 0.97; dHash was rejected because unrelated waterfalls hash within 3 bits) passed. Manifest `data/manifests/sonar-seg-0.1.0.json`, stats report, test hash frozen. Splits: train 2010+2018+synthetic (2,909 images), val 2017 (93), calib 2021 (48), test 2015 (120; 242 cylinders, the most positive-rich site)*
 - [x] **ST-016** Synthetic ghost-net generator v1 — P0 · R2 · 8 pts. *`ml/synth/ghost_net_generator.py` (mesh, crumple, envelope, ropes/floats, burial, Rayleigh-speckle highlight, far-range shadow, blend): **2,000 train tiles** (3,433 net polygons) + 200 holdout tiles on unseen 2017 backgrounds, each with PNG, mask, YOLO-seg label and `*.params.json` (seed and all parameters). Spot check: nets with floats/ropes and correct shadow side look plausible; some solid clumps look more like debris (tune in ST-018). **Assumption:** 0.10 m/px for the mine-SSS backgrounds*
 
@@ -183,18 +171,14 @@ flowchart LR
 - [x] **ST-044** Motion flags (roll, pitch, yaw rate) — P0 · R2 · 2 pts. *`preprocess/motion.py`: flags exactly on pings over threshold, yaw rate wraps at 360° (TC-PRE-009); quality events per ping range*
 - [x] **ST-045** 3-channel input (raw, Lee, local std) — P0 · R2 · 2 pts. *`preprocess/channels.py` is the single implementation; `ml/datasets/xtf_to_tiles.py` imports it, checked by TC-PRE-007*
 - [x] **ST-046** Tiling + chunking with overlap — P0 · R4 · 3 pts. *`preprocess/tiling.py` + `preprocess/pipeline.py`: exact tile ↔ chunk round trip, full coverage with edge-aligned last tile, 25% overlap, masked tiles skipped (TC-PRE-010); chunks follow `pipeline.yaml`*
-- [ ] **ST-048** Preprocessing QA notebook — P0 · R2 · 2 pts. *`ml/notebooks/preprocessing_qa.ipynb` + `scripts/preprocess_qa.py` render six before/after panels per file with a review checklist; panels generated for 3 USGS lines. **Open:** team review at the M2 demo*
 
 ### Other tasks
-- [ ] Annotation calibration session (20 shared tiles) and agreement metrics ([Guidelines §9](docs/data/ANNOTATION_GUIDELINES.md#9-quality-control)) — R2
-- [ ] Publish dataset manifest `sonar-seg@0.1.0` — R1. *Generated: `data/manifests/sonar-seg-0.1.0.json` + `.stats.md`. **Open:** commit, and push `data/processed/sonar-seg` to DVC; it covers mine-SSS + synthetic only until NOMBO review (ST-011) and AI4Shipwrecks (ST-010) land*
 - [x] Automate TC-PRE-001…011 — R2. *Automated: TC-PRE-001, 003…010 (and TC-GEO-004/005). **Carried over:** TC-PRE-002 and TC-PRE-011 need the detector (Sprint 3, ST-075)*
-- [ ] Sprint review: M2 demo with before/after preprocessing visuals — R2
 
 ### Exit criteria (M2)
-- [ ] Preprocessing visually verified (QA notebook reviewed). *Panels checked during development (bottom track on the seabed edge, flat gain, clean ground-range image); formal review at the M2 demo*
-- [ ] Datasets converted; splits pass the leakage check. *Splits pass; mine-SSS and synthetic converted. **Open:** AI4Shipwrecks (ST-010) and NOMBO review (ST-011)*
 - [x] Synthetic ghost-net generator produces tiles + masks. *2,000 + 200 holdout tiles with masks, labels and parameters*
+
+*Open M2 exit criteria (QA review, dataset conversion) moved to Phase 4.*
 
 ---
 
@@ -202,25 +186,43 @@ flowchart LR
 
 **Dates:** 2026-10-05 → 10-09 · **Milestone:** M3 · **Gate:** G2 (thin slice) · **Sprint goal:** trained models and an end-to-end CLI report.
 
+### Carried over from Phase 3
+- [ ] Get the team ID from the SIH portal and add it to the deck (team name Vashishta is already on it); re-export the PDF *(moved from Phase 1, 2, then 3)* — R6
+- [ ] Upload the final idea PDF on the SIH portal: deadline 30 Sept *(moved from Phase 1, 2, then 3)* — R6
+- [ ] Send the S3Simulator permission request ([draft](docs/communications/OUTREACH_DRAFTS.md#4-s3simulator-authors--dataset-permission-optional)); its sample files stay local-only until permission is granted *(moved from Phase 1, 2, then 3)* — R1
+- [ ] **ST-010** Download AI4Shipwrecks; convert masks to YOLO-seg — P0 · R1 · 3 pts *(moved from Phase 2, then 3)*. *Converter ready and unit-tested (`ml/datasets/convert_ai4shipwrecks.py`). **Open:** download in a browser from Deep Blue (scripts get HTTP 403), check the mask encoding, run the converter, inspect the overlays*
+- [ ] **ST-011** Mine SSS dataset; MILCO → `cylinder`; review NOMBO — P0 · R1 · 3 pts *(moved from Phase 2, then 3)*. *Converted: 1,170 images, 437 MILCO → `cylinder`, overlays aligned. **Open:** R1 reviews the 231 NOMBO crops in `data/interim/mine_sss/nombo_review.csv`*
+- [ ] **ST-013** ≥ 3 NOAA/USGS XTF surveys incl. ≥ 1 charted wreck, with provenance — P0 · R3 · 3 pts *(moved from Phase 2, then 3)*. *Have 1 survey: 4 USGS Grand Bay 2015 lines (Klein 3900) in DVC with provenance. **Open:** 2 more surveys, a second sonar model, and a survey over a charted wreck (TD-10)*
+- [ ] Freeze API spec and report schema v1.0 (**Gate G1**) — R4, R3 *(moved from Phase 2, then 3)*. *Schema 1.0 is now produced end to end by `sonarsentinel detect` and served by the mock API (ST-087), which settles the mock-server approach. **Open:** team approval, tag `contracts-1.0`*
+- [ ] Answer PRD Q7: datum/CRS for official reports — R3 *(moved from Phase 2, then 3)*. *Proposed: WGS84 geographic ([ADR-015](docs/architecture/08-architecture-decisions.md#adr-015--report-datum-and-crs-wgs84-geographic-prd-q7)); confirm with NIOT*
+- [ ] G1 passed: contracts approved *(M1 exit criterion, moved from Phase 2, then 3)*
+- [ ] **ST-014** CVAT/Label Studio + SAM 2 (not SAM 3); label ≥ 100 real tiles (10% double-labelled) — P0 · R2 · 5 pts *(moved from Phase 3)*. *Tile source ready: `ml/datasets/xtf_to_tiles.py` writes preprocessed 3-channel 640 px tiles with JSON sidecars. **Open:** set up the labelling tool and label ≥ 100 tiles (people)*
+- [ ] **ST-048** Preprocessing QA notebook: team review — P0 · R2 · 2 pts *(moved from Phase 3)*. *Notebook, `scripts/preprocess_qa.py` and panels for 3 USGS lines exist. **Open:** team review*
+- [ ] Annotation calibration session (20 shared tiles) and agreement metrics ([Guidelines §9](docs/data/ANNOTATION_GUIDELINES.md#9-quality-control)) — R2 *(moved from Phase 3)*
+- [ ] Publish dataset manifest `sonar-seg@0.1.0` — R1 *(moved from Phase 3)*. *Generated: `data/manifests/sonar-seg-0.1.0.json` + `.stats.md`. **Open:** push `data/processed/sonar-seg` to DVC; it covers mine-SSS + synthetic only until ST-010/ST-011 land*
+- [ ] Sprint 2 review: M2 demo with before/after preprocessing visuals — R2 *(moved from Phase 3)*
+- [ ] M2 exit: preprocessing visually verified (QA notebook reviewed) *(moved from Phase 3)*
+- [ ] M2 exit: datasets converted; splits pass the leakage check *(moved from Phase 3; splits pass, AI4Shipwrecks and NOMBO review open)*
+
 ### Machine learning
-- [ ] **ST-017** Synthetic pipe and cylinder generators — P1 · R2 · 5 pts
-- [ ] **ST-018** Synthetic realism review (100 tiles) — P1 · R2 · 2 pts
+- [x] **ST-017** Synthetic pipe and cylinder generators — P1 · R2 · 5 pts. *`ml/synth/object_generators.py`: 1,000 pipe tiles (3,626 polygons) and 1,000 cylinder tiles (1,015) in `data/synthetic/{pipe,cylinder}/1.0.0/train`, each with mask, YOLO-seg label and parameters; unit-tested. The people-based visual review is part of ST-018*
+- [ ] **ST-018** Synthetic realism review (100 tiles) — P1 · R2 · 2 pts. *Needs ≥ 70% plausible ratings from team members; tiles ready (ghost net, pipe, cylinder)*
 - [ ] **ST-050** Baseline YOLO11s-seg on real data — P0 · R1 · 5 pts
 - [ ] **ST-051** Synthetic data + sonar augmentations; ablation — P0 · R1 · 5 pts
 - [ ] **ST-052** SAHI sliced inference — P0 · R1 · 3 pts
-- [ ] **ST-053** PatchCore + `unknown_anomaly` extraction — P0 · R1 · 5 pts
+- [x] **ST-053** PatchCore + `unknown_anomaly` extraction — P0 · R1 · 5 pts. *Own PyTorch PatchCore (ADR-016) `anomaly/patchcore-seafloor@0.1.0`: **tile AUROC 0.957** on held-out site 2017, recall 0.74 at 1.2% false alarms, 3.7 min on CPU ([EXP-20260913-patchcore](ml/experiments/EXP-20260913-patchcore.md)). Heatmap regions outside detector boxes become `unknown_anomaly` with `scores.anomaly` and their own tier (`test_detect_anomaly.py`, `test_pipeline_anomaly.py`; TC-DET-005 on real anomalies needs labelled data)*
 - [ ] **ST-057** `ml/evaluate.py` (metrics, PR curves, confusion) — P0 · R1 · 3 pts
 
 ### Pipeline & geo
-- [ ] **ST-033** Measurements: footprint, size, orientation, depth — P0 · R3 · 3 pts
-- [ ] **ST-054** Merge/dedupe across tiles and chunks — P0 · R4 · 3 pts
-- [ ] **ST-074** CLI `detect`, `validate`, `serve` — P0 · R4 · 3 pts
-- [ ] **ST-075** `pipeline.py` orchestrator — P0 · R4 · 5 pts
+- [x] **ST-033** Measurements: footprint, size, orientation, depth — P0 · R3 · 3 pts. *`geo/measure.py`: minimum-area rectangle, footprint corners in WGS84, orientation from heading, depth = sensor depth + altitude; rotated rectangles measured within 1 px (TC-GEO-006…008)*
+- [x] **ST-054** Merge/dedupe across tiles and chunks — P0 · R4 · 3 pts. *`detect/merge.py`: same-class IoU/IoS merge across tile overlaps, cross-chunk dedupe keeps the copy farther from its chunk edge; no duplicates on the overlap fixture (TC-DET-006) or on a target inside a chunk overlap end to end*
+- [x] **ST-074** CLI `detect`, `validate`, `serve` — P0 · R4 · 3 pts. *`detect` writes JSON/CSV per API spec §5 with `--nav`, `--utm-epsg`, `--min-conf`, `--no-anomaly`, `--allow-no-gps`, `--detector auto|classical|yolo`; `serve [--mock]` (TC-REP-008)*
+- [x] **ST-075** `pipeline.py` orchestrator — P0 · R4 · 5 pts. *S0–S7 → detect → merge → measure → score → report, with progress/track/warning/detection/done events; same input + config ⇒ identical report apart from `generated_utc` and `duration_s` (TC-REP-005, TC-REP-006, TC-DET-007)*
 
 ### Backend & frontend foundations
-- [ ] **ST-080** FastAPI skeleton, `/health`, `/models` — P0 · R4 · 2 pts
-- [ ] **ST-087** Mock API server for the frontend — P0 · R4 · 2 pts
-- [ ] **ST-090** App shell, routing, design tokens, API types — P0 · R5 · 3 pts
+- [x] **ST-080** FastAPI skeleton, `/health`, `/models` — P0 · R4 · 2 pts. *`api/main.py` with the error model; `/docs` lists the endpoints (TC-API-003, TC-API-008)*
+- [x] **ST-087** Mock API server for the frontend — P0 · R4 · 2 pts. *`api/mock.py` + fixtures from a pipeline run: surveys, track, detections (filters, sort, paging, bbox), JSON/CSV report, jobs, review `PATCH`, WebSocket replay with `seq` resume (TC-API-004…007 against the mock)*
+- [x] **ST-090** App shell, routing, design tokens, API types — P0 · R5 · 3 pts. *`frontend/`: React + TS + Vite + Leaflet, routes for all wireframe screens, class/tier tokens, typed client and generated report types, Live Map against the mock; lint, typecheck, 6 tests and build pass*
 
 ### Quality
 - [ ] **ST-110** Integration test: sample XTF → schema-valid report in CI — P0 · R6 · 3 pts

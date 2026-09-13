@@ -28,12 +28,16 @@ import numpy as np
 
 def tile_grid(height: int, width: int, crop_px: int) -> list[tuple[int, int]]:
     """Top-left corners of non-overlapping ``crop_px`` squares that fit in the image."""
-    return [(r, c) for r in range(0, height - crop_px + 1, crop_px)
-            for c in range(0, width - crop_px + 1, crop_px)]  # fmt: skip
+    return [
+        (r, c)
+        for r in range(0, height - crop_px + 1, crop_px)
+        for c in range(0, width - crop_px + 1, crop_px)
+    ]
 
 
-def is_usable(tile: np.ndarray, min_mean: float = 12.0, min_std: float = 4.0,
-              max_dark_fraction: float = 0.3) -> bool:  # fmt: skip
+def is_usable(
+    tile: np.ndarray, min_mean: float = 12.0, min_std: float = 4.0, max_dark_fraction: float = 0.3
+) -> bool:
     """Reject blank tiles: too dark, too flat, or with a large near-black area."""
     t = tile.astype(np.float32)
     return bool(t.mean() >= min_mean and t.std() >= min_std and (t < 5).mean() <= max_dark_fraction)
@@ -66,27 +70,43 @@ def build(raw: Path, out: Path, crop_px: int = 512, tile_px: int = 256, seed: in
                     rel = Path(year) / f"{Path(name).stem}_r{r}_c{c}.png"
                     (out / year).mkdir(parents=True, exist_ok=True)
                     cv2.imwrite(str(out / rel), tile)
-                    rows.append({"tile": rel.as_posix(), "group": year, "source": name,
-                                 "row": r, "col": c, "mean": round(float(tile.mean()), 1),
-                                 "std": round(float(tile.std()), 1)})  # fmt: skip
+                    rows.append(
+                        {
+                            "tile": rel.as_posix(),
+                            "group": year,
+                            "source": name,
+                            "row": r,
+                            "col": c,
+                            "mean": round(float(tile.mean()), 1),
+                            "std": round(float(tile.std()), 1),
+                        }
+                    )
                     counts[f"tiles_{year}"] += 1
     out.mkdir(parents=True, exist_ok=True)
     with (out / "manifest.csv").open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=["tile", "group", "source", "row", "col", "mean",
-                                                "std"])  # fmt: skip
+        writer = csv.DictWriter(
+            fh, fieldnames=["tile", "group", "source", "row", "col", "mean", "std"]
+        )
         writer.writeheader()
         writer.writerows(rows)
 
     sample = random.Random(seed).sample(rows, min(64, len(rows)))
     if sample:
-        thumbs = [cv2.resize(cv2.imread(str(out / s["tile"]), cv2.IMREAD_GRAYSCALE), (96, 96))
-                  for s in sample]  # fmt: skip
+        thumbs = [
+            cv2.resize(cv2.imread(str(out / s["tile"]), cv2.IMREAD_GRAYSCALE), (96, 96))
+            for s in sample
+        ]
         thumbs += [np.zeros((96, 96), np.uint8)] * (-len(thumbs) % 8)
         grid = np.vstack([np.hstack(thumbs[i : i + 8]) for i in range(0, len(thumbs), 8)])
         cv2.imwrite(str(out / "contact_sheet.png"), grid)
 
-    summary = {"tiles": len(rows), "crop_px": crop_px, "tile_px": tile_px, **counts,
-               "source": "D2 mine_sss_2024 images with empty labels (CC BY 4.0)"}  # fmt: skip
+    summary = {
+        "tiles": len(rows),
+        "crop_px": crop_px,
+        "tile_px": tile_px,
+        **counts,
+        "source": "D2 mine_sss_2024 images with empty labels (CC BY 4.0)",
+    }
     (out / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     return summary
 

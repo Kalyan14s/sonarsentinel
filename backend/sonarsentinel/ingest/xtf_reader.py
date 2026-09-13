@@ -53,9 +53,20 @@ PortOrder = Literal["auto", "far_first", "nadir_first"]
 _SAMPLE_FORMAT_DTYPE: dict[int, Any] = {2: np.uint32, 3: np.uint16, 5: np.float32, 8: np.uint8}
 _BYTES_DTYPE: dict[int, Any] = {1: np.uint8, 2: np.uint16, 4: np.uint32}
 _NAV_FIELDS = (
-    "sensor_x", "sensor_y", "ship_x", "ship_y", "heading_deg", "altitude_m", "sensor_depth_m",
-    "speed_kn", "roll_deg", "pitch_deg", "slant_range_m", "cable_out_m", "layback_m",
-)  # fmt: skip
+    "sensor_x",
+    "sensor_y",
+    "ship_x",
+    "ship_y",
+    "heading_deg",
+    "altitude_m",
+    "sensor_depth_m",
+    "speed_kn",
+    "roll_deg",
+    "pitch_deg",
+    "slant_range_m",
+    "cable_out_m",
+    "layback_m",
+)
 
 
 @dataclass(frozen=True)
@@ -399,9 +410,14 @@ def read_xtf(
         for row, pos in enumerate(scan.ping_offsets):
             ping, chans = _read_ping(fh, int(pos), scan, t)
             time_parts[row] = (
-                ping.Year, ping.Month, ping.Day, ping.Hour, ping.Minute, ping.Second,
+                ping.Year,
+                ping.Month,
+                ping.Day,
+                ping.Hour,
+                ping.Minute,
+                ping.Second,
                 ping.HSeconds,
-            )  # fmt: skip
+            )
             fields["sensor_x"][row] = ping.SensorXcoordinate
             fields["sensor_y"][row] = ping.SensorYcoordinate
             fields["ship_x"][row] = ping.ShipXcoordinate
@@ -490,8 +506,15 @@ def _build_nav(
     else:
         warnings.append(NO_NAVIGATION)
 
-    for name in ("heading_deg", "sensor_depth_m", "roll_deg", "pitch_deg", "slant_range_m",
-                 "cable_out_m", "layback_m"):  # fmt: skip
+    for name in (
+        "heading_deg",
+        "sensor_depth_m",
+        "roll_deg",
+        "pitch_deg",
+        "slant_range_m",
+        "cable_out_m",
+        "layback_m",
+    ):
         nav[name] = fields[name]
     nav["altitude_m"] = np.where(fields["altitude_m"] > 0, fields["altitude_m"], np.nan)
     nav["speed_mps"] = fields["speed_kn"] * KNOTS_TO_MPS

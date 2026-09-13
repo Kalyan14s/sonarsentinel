@@ -107,6 +107,7 @@ def write_synthetic_xtf(
     port_order: PortOrder = "far_first",
     profile: Profile = "water_column",
     targets: list[tuple[int, str, int]] | None = None,
+    target_extent: tuple[int, int] = (1, 1),
     seed: int = 0,
     write_ship_position: bool = True,
     write_sensor_position: bool = True,
@@ -129,6 +130,7 @@ def write_synthetic_xtf(
         profile: Across-track intensity: ``water_column`` (dark band next to nadir, flat beyond)
             or ``attenuation`` (shallow water: brightest at nadir, fading with range).
         targets: ``(ping, side, sample)`` point targets; defaults to a small set on both sides.
+        target_extent: ``(pings, samples)`` size of each target, starting at its ping and sample.
         seed: Random seed for the speckle background.
         write_ship_position: Also fill ``ShipX/Ycoordinate`` (same as the sensor).
         write_sensor_position: Fill ``SensorX/Ycoordinate``.
@@ -176,7 +178,8 @@ def write_synthetic_xtf(
         bearing = headings[ping] + (90.0 if side == "starboard" else -90.0)
         lon2, lat2, _ = GEOD.fwd(lons[ping], lats[ping], bearing, ground)
         truth.append(Target(ping, side, sample, slant, ground, float(lat2), float(lon2)))
-        lookup.setdefault((ping, side), []).append(sample)
+        for dp in range(target_extent[0]):
+            lookup.setdefault((ping + dp, side), []).append(sample)
 
     chan_size = ctypes.sizeof(XTFPingChanHeader)
     ping_size = ctypes.sizeof(XTFPingHeader)
@@ -224,7 +227,7 @@ def write_synthetic_xtf(
                     water = int(altitude_m / slant_range_m * samples_per_side)
                     samples[:water] = 5  # dark water column next to nadir
                 for s in lookup.get((i, side), []):
-                    samples[s] = target_level
+                    samples[s : s + target_extent[1]] = target_level
                 if side == "port" and port_order == "far_first":
                     samples = samples[::-1].copy()
                 chans.append(chan)

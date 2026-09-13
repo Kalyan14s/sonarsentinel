@@ -1,0 +1,53 @@
+.map {
+  position: absolute;
+  inset: 0;
+}
+
+:global(.ss-marker) {
+  display: block;
+  width: 18px;
+  height: 18px;
+  background: var(--marker);
+  border: 2px solid var(--marker);
+}
+
+:global(.ss-diamond) {
+  transform: rotate(45deg) scale(0.8);
+}
+
+:global(.ss-circle) {
+  border-radius: 50%;
+}
+
+:global(.ss-triangle) {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+:global(.ss-bar) {
+  height: 8px;
+  margin-top: 5px;
+}
+
+:global(.ss-hexagon) {
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+}
+
+/* tiers: hazard solid with white outline; review hollow; anomaly dashed; hidden grey */
+:global(.ss-tier-hazard) {
+  outline: 2px solid var(--tier-hazard-outline);
+}
+
+:global(.ss-tier-review) {
+  background: transparent;
+  border-width: 3px;
+}
+
+:global(.ss-tier-anomaly) {
+  background: transparent;
+  border-style: dashed;
+}
+
+:global(.ss-tier-hidden) {
+  background: var(--tier-hidden);
+  border-color: var(--tier-hidden);
+}

@@ -33,7 +33,7 @@ chunking:
   overlap_pings: 200
 
 detection:
-  model: models/detector/yolo11s-seg-sonar/1.2.0/best.onnx
+  model: models/detector/yolo11s-seg-sonar-real/0.1.0/best.pt   # CPU baseline (EXP-20260913-baseline)
   runtime: auto                    # torch | onnxruntime | tensorrt | openvino | auto
   min_raw_score: 0.20
   sahi: true
@@ -41,7 +41,7 @@ detection:
 
 anomaly:
   enabled: true
-  model: models/anomaly/patchcore-seafloor/1.0.0
+  model: models/anomaly/patchcore-seafloor/0.1.0                 # EXP-20260913-patchcore
   tile_px: 256
   threshold: 0.50
   min_region_m2: 0.25

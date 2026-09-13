@@ -27,6 +27,7 @@ dev = [
   "types-PyYAML",
   "pre-commit>=3.7",
   "jsonschema>=4.21",
+  "httpx>=0.27",
 ]
 geo = [
   "scipy>=1.11",
@@ -51,6 +52,7 @@ include = ["sonarsentinel*"]
 
 [tool.setuptools.package-data]
 "sonarsentinel.report" = ["schema/*.json"]
+"sonarsentinel.api" = ["fixtures/*.json"]
 
 [tool.ruff]
 line-length = 100
@@ -68,7 +70,7 @@ strict = true
 files = ["sonarsentinel"]
 
 [[tool.mypy.overrides]]
-module = ["pyxtf.*", "rasterio.*", "sahi.*", "ultralytics.*", "anomalib.*", "pandas.*", "pyproj.*", "scipy.*", "cv2.*"]
+module = ["pyxtf.*", "rasterio.*", "sahi.*", "ultralytics.*", "anomalib.*", "pandas.*", "pyproj.*", "scipy.*", "cv2.*", "torchvision.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

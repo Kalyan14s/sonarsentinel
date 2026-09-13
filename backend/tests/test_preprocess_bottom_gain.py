@@ -100,6 +100,10 @@ def test_port_and_starboard_are_balanced() -> None:
     port_med = float(np.median(out.port))
     stbd_med = float(np.median(out.starboard))
     assert abs(port_med - stbd_med) / max(port_med, stbd_med) < 0.05
-    unbalanced = normalize_gain(_attenuated(rng, 1.0), _attenuated(rng, 4.0), per_side=False,
-                                along_track_window_pings=1_000_000)  # fmt: skip
+    unbalanced = normalize_gain(
+        _attenuated(rng, 1.0),
+        _attenuated(rng, 4.0),
+        per_side=False,
+        along_track_window_pings=1_000_000,
+    )
     assert unbalanced.port is not None
