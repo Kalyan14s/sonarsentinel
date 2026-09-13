@@ -1,0 +1,3 @@
+# Ruff settings for Python files outside backend/ (e.g. scripts/).
+# The single source of truth is backend/pyproject.toml.
+extend = "backend/pyproject.toml"

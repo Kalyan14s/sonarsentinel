@@ -1,0 +1,32 @@
+# SonarSentinel development environment: core + geospatial + developer tools.
+# Used from Sprint 0 (scaffold, CI) through Sprint 2 (ingest, geo, preprocessing).
+# ML packages (PyTorch, Ultralytics, SAHI, anomalib, LightGBM, ONNX Runtime) are added in
+# Sprint 3 from requirements-ml.txt; install PyTorch first (see docs/guides/DEVELOPER_SETUP.md).
+#
+#   conda env create -f backend/environment.yml
+#   conda activate sonarsentinel
+#   pip install -e "backend[dev]"
+name: sonarsentinel
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - numpy
+  - scipy
+  - pandas
+  - pyproj
+  - gdal
+  - rasterio
+  - shapely
+  - pyyaml
+  - typer
+  - pytest
+  - pytest-cov
+  - ruff
+  - mypy
+  - pre-commit
+  - pip:
+      - pyxtf
+      - opencv-python-headless
+      - types-PyYAML

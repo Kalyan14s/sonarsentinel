@@ -4,7 +4,7 @@
 
 Smart India Hackathon · Problem Statement **26057** · Ministry of Earth Sciences (MoES) — National Institute of Ocean Technology (NIOT) · Software · Disaster Management
 
-> **Status:** Design & documentation phase (v0.1.0). Code modules are built milestone by milestone. See the [Project Plan](docs/planning/PROJECT_PLAN.md).
+> **Status:** Sprint 0. The documentation baseline is approved, and the backend scaffold is in place and tested: package, CLI, upload validation, CI and pre-commit. Pipeline modules are built milestone by milestone; see the [TODO](TODO.md) and [Project Plan](docs/planning/PROJECT_PLAN.md).
 
 ---
 
@@ -39,7 +39,7 @@ flowchart LR
 ## Repository structure
 
 ```text
-marine-debris/
+sonarsentinel/
 ├── docs/          # All project documentation (start at docs/README.md)
 ├── backend/       # sonarsentinel Python package: pipeline, API, CLI      (M1–M5)
 ├── ml/            # Dataset tools, synthetic generator, training, evaluation (M2–M4)
@@ -52,18 +52,22 @@ marine-debris/
 
 ## Quick start
 
-> Available once milestones M1 (CLI) and M5 (dashboard) are complete. Full instructions: [Developer Setup](docs/guides/DEVELOPER_SETUP.md).
+Full instructions: [Developer Setup](docs/guides/DEVELOPER_SETUP.md).
 
+**Works today (Sprint 0 scaffold):**
 ```bash
-# Backend + CLI
 conda env create -f backend/environment.yml
 conda activate sonarsentinel
-pip install -e backend
-sonarsentinel detect data/samples/line_07.xtf --out results/ --formats json,csv
+pip install -e "backend[dev]"
+sonarsentinel --help
+sonarsentinel validate path/to/line_07.xtf      # stage S0: type, size and header checks
+cd backend && pytest --cov=sonarsentinel
+```
 
-# Dashboard (full stack)
-docker compose -f docker/docker-compose.yml up -d
-# open http://localhost:8080
+**Planned:**
+```bash
+sonarsentinel detect data/samples/line_07.xtf --out results/ --formats json,csv   # Sprint 3
+docker compose -f docker/docker-compose.yml up -d                                  # Sprint 6, dashboard at http://localhost:8080
 ```
 
 ## Documentation

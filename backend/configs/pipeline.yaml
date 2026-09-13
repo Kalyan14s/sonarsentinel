@@ -1,0 +1,64 @@
+# SonarSentinel pipeline configuration.
+# Reference: docs/architecture/02-data-pipeline.md section 6. Model files are created from Sprint 3.
+pipeline_version: 0.1.0
+
+ingest:
+  max_upload_gb: 2
+  image_layout: port_stbd          # port_stbd | port_only | stbd_only
+  utm_epsg: auto                   # or e.g. 32644
+
+navigation:
+  smoothing_window_pings: 31
+  heading_smoothing_window_pings: 25
+  max_speed_mps: 6.0
+  apply_layback: auto              # auto | true | false
+
+preprocess:
+  ground_resolution_m: 0.10
+  bottom_tracking: { enabled: auto, threshold_k: 3.0, median_window: 31 }
+  gain: { along_track_window_pings: 200, per_side: true, clip_percentiles: [1, 99.5] }
+  despeckle: { method: lee, window: 5 }
+  local_std_window: 7
+  dropout: { min_row_std_ratio: 0.05, max_inpaint_gap_pings: 3 }
+  motion: { max_roll_deg: 5, max_pitch_deg: 5, max_yaw_rate_deg_per_ping: 3 }
+  surface_return_mask: false
+
+tiling:
+  size_px: 640
+  overlap: 0.25
+  skip_if_masked_fraction_gt: 0.8
+
+chunking:
+  pings_per_chunk: 2000
+  overlap_pings: 200
+
+detection:
+  model: models/detector/yolo11s-seg-sonar/1.2.0/best.onnx
+  runtime: auto                    # torch | onnxruntime | tensorrt | openvino | auto
+  min_raw_score: 0.20
+  sahi: true
+  classes: [shipwreck, pipe, cylinder, ghost_net, debris_other]
+
+anomaly:
+  enabled: true
+  model: models/anomaly/patchcore-seafloor/1.0.0
+  tile_px: 256
+  threshold: 0.50
+  min_region_m2: 0.25
+
+scoring:
+  weights: { detector: 0.45, anomaly: 0.15, shadow: 0.15, fp_filter: 0.15, persistence: 0.10 }
+  penalties: { dropout: 0.20, motion: 0.10 }
+  fp_filter_model: models/fp_filter/lgbm/1.1.0/model.txt
+  calibrator: models/calibrator/isotonic/1.1.0/calibrator.pkl
+  tiers: { hazard: 80, review: 50, anomaly: 30 }
+
+geo:
+  datum: WGS84
+  cluster_radius_m: 5
+  coordinate_decimals: 6
+
+report:
+  formats: [json, csv, geojson, kml]
+  chip_size_px: 256
+  mosaic: true

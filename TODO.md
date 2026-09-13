@@ -30,7 +30,7 @@ flowchart LR
 | Phase | Sprint | Dates (illustrative) | Milestone / gate | Goal | Items | Done |
 |---|---|---|---|---|---|---|
 | [0](#phase-0--documentation--design) | — | → 2026-09-13 | Docs baseline | Complete, verified documentation | 20 | 20 |
-| [1](#phase-1--sprint-0--project-setup) | S0 | 09-14 → 09-18 | M0 · IS (idea PDF due 09-30) | Team can build, test, collaborate; SIH idea submitted | 28 | 0 |
+| [1](#phase-1--sprint-0--project-setup) | S0 | 09-14 → 09-18 | M0 · IS (idea PDF due 09-30) | Team can build, test, collaborate; SIH idea submitted | 28 | 7 |
 | [2](#phase-2--sprint-1--ingest--geotagging) | S1 | 09-21 → 09-25 | M1 · G1 | Read sonar logs and place them correctly on a map | 20 | 0 |
 | [3](#phase-3--sprint-2--preprocessing--training-data) | S2 | 09-28 → 10-02 | M2 | Clean, tiled sonar data; training data ready | 19 | 0 |
 | [4](#phase-4--sprint-3--models--thin-slice) | S3 | 10-05 → 10-09 | M3 · G2 | Trained models; CLI report end to end | 20 | 0 |
@@ -79,39 +79,41 @@ flowchart LR
 
 **Dates:** 2026-09-14 → 09-18 · **Milestone:** M0 · **Sprint goal:** everyone can build, test and collaborate; datasets are downloading.
 
+> **Status 2026-09-13:** everything that can be done from this machine is done and verified (repository, scaffold, tests, pre-commit, idea deck, plans, drafts). The remaining items need **people** (SPOC, internal hackathon, team details, sign-offs, sending messages), **GitHub access** (push, CI run, branch protection, board) or **other laptops** (Ubuntu and teammates' environments).
+
 ### SIH 2026 idea submission (deadline-critical)
-- [ ] **Today:** confirm the idea-submission deadline with the college SPOC (official guidelines say **30 Sept 2026**; an older PDF says 15 Sept) — R6
+- [ ] **Today:** confirm the idea-submission deadline with the college SPOC (official guidelines say **30 Sept 2026**; an older PDF says 15 Sept). Message drafted: [Outreach §1](docs/communications/OUTREACH_DRAFTS.md#1-college-spoc--confirm-sih-2026-deadline-and-nomination-send-today) — R6
 - [ ] Check team composition: exactly 6 members, ≥ 1 female member, same college; unique team name without the institute's name — R6
 - [ ] Take part in the college internal hackathon; SPOC nominates the team on the portal — all
 - [ ] Fill in team name, team ID and member names (deck title slide + private contact sheet, **not** in the repo) *(moved from Phase 0)* — R6
-- [ ] Build the idea deck on the [official 2026 template](docs/hackathon/SIH_PRESENTATION.md#part-a--idea-submission-deck-6-slides): ≤ 6 slides, headings unchanged, required footer — R6, R5
-- [ ] Export to **PDF** and upload through the team leader's portal login: target 25 Sept, deadline 30 Sept — R6
+- [x] Build the idea deck on the [official 2026 template](docs/hackathon/SIH_PRESENTATION.md#part-a--idea-submission-deck-6-slides): ≤ 6 slides, headings unchanged, required footer. **Draft ready:** [PDF](docs/hackathon/idea-deck/SonarSentinel_SIH2026_Idea_DRAFT.pdf) · [PowerPoint](docs/hackathon/idea-deck/SonarSentinel_SIH2026_Idea_DRAFT.pptx); fill in team name/ID and review before upload — R6, R5
+- [ ] Export to **PDF** and upload through the team leader's portal login: target 25 Sept, deadline 30 Sept. *(Draft PDF exported; final export after team details, then upload)* — R6
 
 ### Environment & repository
-- [ ] Move the working copy to a local, non-OneDrive path (e.g. `C:\dev\sonarsentinel`) — R6 ([why](docs/guides/DEVELOPER_SETUP.md#-windows-notes))
-- [ ] Install Git, Miniforge, Node LTS, Docker on every laptop ([Developer Setup §1](docs/guides/DEVELOPER_SETUP.md#1-prerequisites)) — all
-- [ ] Create the private GitHub repository and push the documentation — R6
-- [ ] Tag the approved documentation baseline `docs-baseline-1.0` *(moved from Phase 0; needs the repository)* — R6
-- [ ] **ST-001** Scaffold repository and `sonarsentinel` package skeleton — P0 · R6 · 3 pts
-- [ ] **ST-002** CI: ruff, mypy, pytest, eslint, tsc, build on every PR — P0 · R6 · 3 pts
-- [ ] **ST-003** Reproducible environments verified on Windows and Ubuntu — P0 · R6 · 3 pts
-- [ ] **ST-004** `scripts/fetch_test_data.py` with checksums — P0 · R2 · 2 pts
-- [ ] **ST-006** pre-commit hooks, PR/issue templates, branch protection — P0 · R6 · 1 pt
+- [x] Move the working copy to a local, non-OneDrive path: **`C:\dev\sonarsentinel`** (OneDrive folder kept as a backup) — R6 ([why](docs/guides/DEVELOPER_SETUP.md#-windows-notes))
+- [ ] Install Git, Miniforge, Node LTS, Docker on every laptop ([Developer Setup §1](docs/guides/DEVELOPER_SETUP.md#1-prerequisites)). *This machine: Git ✅ Node ✅ Miniforge ✅ (26.7.2), Docker ❌; other laptops pending* — all
+- [ ] Create the private GitHub repository and push the documentation. *Blocked here: no GitHub CLI/account access; local repository on `main` is ready to push* — R6
+- [x] Tag the approved documentation baseline `docs-baseline-1.0`: done in the local repository (commit `420108a`); pushed together with the repository — R6
+- [x] **ST-001** Scaffold repository and `sonarsentinel` package skeleton — P0 · R6 · 3 pts. *Verified: editable install, CLI smoke test, 32 tests pass (96% coverage), mypy strict clean*
+- [ ] **ST-002** CI: ruff, mypy, pytest, eslint, tsc, build on every PR — P0 · R6 · 3 pts. *Workflow written and the same commands pass locally; confirm checks run on the first push/PR (frontend steps activate in Sprint 3)*
+- [ ] **ST-003** Reproducible environments verified on Windows and Ubuntu — P0 · R6 · 3 pts. *Windows ✅ verified (GDAL 3.12.3, rasterio 1.4.4, pyproj 3.7.2, OpenCV 5.0.0, pyxtf 1.5.0); Ubuntu pending*
+- [x] **ST-004** `scripts/fetch_test_data.py` with checksums — P0 · R2 · 2 pts. *SHA-256 pinning, trust-on-first-use, idempotent skip, mismatch fails; 4 tests pass (manifest entries added when fixtures are chosen)*
+- [ ] **ST-006** pre-commit hooks, PR/issue templates, branch protection — P0 · R6 · 1 pt. *Hooks installed and passing on all files ✅; templates ✅; branch protection needs the GitHub repository*
 - [ ] Create the GitHub Projects board; import EP-01…EP-12 and all stories — R6
 
 ### Data & external requests
 - [ ] Start downloads: AI4Shipwrecks, mine-detection SSS, KLSG, NOAA/USGS candidates ([Datasets §5](docs/data/DATASETS.md#5-choosing-noaausgs-surveys)) — R1, R3
-- [ ] Set up shared storage + DVC remote; create `ml/datasets/LICENSES.md` ([DMP §3](docs/data/DATA_MANAGEMENT_PLAN.md#3-storage-structure-and-versioning)) — R6, R1
-- [ ] Send data request to NIOT: sample logs, sonar models, edge hardware (PRD Q1, Q2, Q4) — R6
-- [ ] Contact WWF / GhostNetZero for ghost-net sample access (PRD Q6) — R6
+- [ ] Set up shared storage + DVC remote; create `ml/datasets/LICENSES.md` ([DMP §3](docs/data/DATA_MANAGEMENT_PLAN.md#3-storage-structure-and-versioning)). *Licence register created ✅ ([ml/datasets/LICENSES.md](ml/datasets/LICENSES.md)); shared storage/DVC remote needs a team storage location* — R6, R1
+- [ ] Send data request to NIOT: sample logs, sonar models, edge hardware (PRD Q1, Q2, Q4). *Drafted: [Outreach §2](docs/communications/OUTREACH_DRAFTS.md#2-niot--sample-data-and-domain-questions-prd-q1-q2-q4-q6-q7)* — R6
+- [ ] Contact WWF / GhostNetZero for ghost-net sample access (PRD Q6). *Drafted: [Outreach §3](docs/communications/OUTREACH_DRAFTS.md#3-wwf-germany--ghostnetzero--ghost-net-sample-access-prd-q6)* — R6
 - [ ] Open the AI4Shipwrecks Deep Blue record in a browser and record its licence in `ml/datasets/LICENSES.md` and [Licences §3](docs/legal/LICENSES_AND_COMPLIANCE.md#3-datasets-and-data-sources) (automated check blocked) *(moved from Phase 0)* — R1
-- [ ] *(Optional)* Ask the S3Simulator authors for written permission to use the dataset (no licence published) — R1
+- [ ] *(Optional)* Ask the S3Simulator authors for written permission to use the dataset (no licence published). *Drafted: [Outreach §4](docs/communications/OUTREACH_DRAFTS.md#4-s3simulator-authors--dataset-permission-optional)* — R1
 
 ### Team
 - [ ] Assign roles R1–R6 to people; schedule ceremonies and mentor sync ([Plan §7](docs/planning/PROJECT_PLAN.md#7-ceremonies-and-communication)) — R6
 - [ ] R1–R5 review the baseline and sign [the Phase 0 record](docs/planning/PHASE0_REVIEW_SIGNOFF.md#7-sign-off); raise any *Changes required* as change requests *(moved from Phase 0)* — R1–R5
-- [ ] Decide frontend styling approach (Tailwind or CSS modules) — R5
-- [ ] Sprint 1 planning: confirm stories, owners, sprint goal — R6
+- [x] Decide frontend styling approach: **CSS Modules + design tokens** ([ADR-014](docs/architecture/08-architecture-decisions.md#adr-014--frontend-styling-css-modules--css-custom-property-design-tokens); R5 may revisit before ST-090) — R5
+- [x] Sprint 1 planning: goal, 33 committed points, schedule, exit criteria and risks in [SPRINT_1_PLAN.md](docs/planning/SPRINT_1_PLAN.md); people are confirmed per role at Monday planning — R6
 
 ### Exit criteria (M0)
 - [ ] Repo, CI and environments work on all laptops

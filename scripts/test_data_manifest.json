@@ -1,0 +1,5 @@
+{
+  "manifest_version": "1.0",
+  "notes": "Small public fixtures only (< 50 MB each) for tests. Add entries as {name, url, dest (under data/test/), sha256 (null on first add, then pin), source, licence}. Large survey data is managed with DVC: see docs/data/DATA_MANAGEMENT_PLAN.md. CI uses generated synthetic fixtures (TD-01) instead of downloads.",
+  "files": []
+}

@@ -41,53 +41,22 @@ cd sonarsentinel
 
 ## 3. Backend and ML environment
 
-### 3.1 Create the conda environment *(planned file: `backend/environment.yml`)*
+### 3.1 Create the conda environment (`backend/environment.yml`)
 
-```yaml
-name: sonarsentinel
-channels: [conda-forge]
-dependencies:
-  - python=3.11
-  - gdal
-  - rasterio
-  - pyproj
-  - shapely
-  - numpy
-  - scipy
-  - pandas
-  - scikit-image
-  - scikit-learn
-  - lightgbm
-  - pip
-  - pip:
-      - pyxtf
-      - opencv-python-headless
-      - ultralytics
-      - sahi
-      - anomalib
-      - onnxruntime
-      - fastapi
-      - "uvicorn[standard]"
-      - sqlalchemy
-      - pydantic-settings
-      - typer
-      - python-multipart
-      - pytest
-      - pytest-cov
-      - hypothesis
-      - httpx
-      - schemathesis
-      - jsonschema
-      - ruff
-      - mypy
-      - pre-commit
-      - dvc
-```
+The environment holds the core, geospatial and developer tools used from Sprint 0 to Sprint 2. ML packages are added in Sprint 3 (§3.2), which keeps the first setup fast and avoids PyTorch/anomalib version conflicts.
+
+| File | Contents | When |
+|---|---|---|
+| `backend/environment.yml` | Python 3.11, NumPy/SciPy/pandas, GDAL, rasterio, pyproj, Shapely, PyYAML, Typer, pytest, ruff, mypy, pre-commit; pip: pyxtf, OpenCV (headless), types-PyYAML | Sprint 0 onwards |
+| `backend/requirements-ml.txt` | Ultralytics, SAHI, anomalib, LightGBM, scikit-learn, ONNX Runtime | Sprint 3, after PyTorch (§3.2) |
+| `backend/pyproject.toml` extras | `[dev]`, `[geo]`, `[api]` | As needed |
 
 ```bash
 conda env create -f backend/environment.yml
 conda activate sonarsentinel
 ```
+
+> **Windows, Miniforge installed without "Add to PATH":** open the **Miniforge Prompt** from the Start menu, or call conda directly, e.g. `%USERPROFILE%\miniforge3\Scripts\conda.exe run -n sonarsentinel pytest`.
 
 ### 3.2 Install PyTorch correctly (GPU or CPU)
 Install PyTorch **before** relying on Ultralytics/anomalib, so a CPU-only build isn't pulled in by accident:
@@ -100,9 +69,15 @@ Install PyTorch **before** relying on Ultralytics/anomalib, so a CPU-only build 
 python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
 ```
 
-> Pin exact versions of `torch`, `ultralytics`, `anomalib` and `lightning` in `backend/requirements-lock.txt` once a working combination is found. anomalib is sensitive to torch/lightning versions.
+4. Then install the ML packages:
 
-### 3.3 Install the package and hooks *(planned)*
+```bash
+pip install -r backend/requirements-ml.txt
+```
+
+> Pin exact versions of `torch`, `ultralytics`, `anomalib` and `lightning` in `backend/requirements-ml.lock.txt` once a working combination is found. anomalib is sensitive to torch/lightning versions.
+
+### 3.3 Install the package and hooks
 
 ```bash
 pip install -e "backend[dev]"
@@ -113,18 +88,20 @@ sonarsentinel --help
 ### 3.4 Verify geospatial and sonar libraries
 
 ```bash
-python -c "import rasterio, pyproj, osgeo.gdal as g, cv2, pyxtf, ultralytics; print('GDAL', g.__version__, 'OpenCV', cv2.__version__)"
+python -c "import rasterio, pyproj, cv2, pyxtf; from osgeo import gdal; print('GDAL', gdal.__version__, 'OpenCV', cv2.__version__)"
 ```
 
 ## 4. Test data and tests
 
 ```bash
-python scripts/fetch_test_data.py          # (planned) downloads small public fixtures with checksums
-python tests/tools/make_synthetic_xtf.py   # (planned) generates TD-01 synthetic survey
+python scripts/fetch_test_data.py          # downloads fixtures listed in scripts/test_data_manifest.json and verifies SHA-256 (manifest is empty until fixtures are chosen)
+python tests/tools/make_synthetic_xtf.py   # (planned, Sprint 1) generates the TD-01 synthetic survey
 
-ruff check . && ruff format --check .
-mypy backend/sonarsentinel
-pytest -q --cov=sonarsentinel
+cd backend                                 # pyproject.toml (ruff, mypy, pytest config) lives here; CI runs the same commands
+ruff check . ../scripts
+ruff format --check . ../scripts
+mypy
+pytest --cov=sonarsentinel --cov-report=term-missing
 ```
 
 ## 5. Run the backend
@@ -133,11 +110,11 @@ pytest -q --cov=sonarsentinel
 # copy and edit environment settings
 cp .env.example .env            # Windows PowerShell: Copy-Item .env.example .env
 
-sonarsentinel serve --host 127.0.0.1 --port 8000 --reload
-# API docs: http://127.0.0.1:8000/docs
+sonarsentinel serve --host 127.0.0.1 --port 8000 --reload   # (planned, Sprint 3: ST-080) currently prints "not implemented"
+# API docs (once the API exists): http://127.0.0.1:8000/docs
 ```
 
-**`.env.example`** *(planned)*
+**`.env.example`**
 ```dotenv
 SS_CONFIG=backend/configs/pipeline.yaml
 SS_DATA_DIR=./data
@@ -149,7 +126,14 @@ SS_LOG_LEVEL=INFO
 # SS_OFFLINE_TILES=./tiles/basemap.mbtiles
 ```
 
-**CLI example:**
+**CLI commands available now (Sprint 0 scaffold):**
+```bash
+sonarsentinel version                          # package version
+sonarsentinel validate line_07.xtf nav.csv     # stage S0: type, size and header checks
+sonarsentinel config                           # pipeline_version and config hash
+```
+
+**Planned (Sprint 3: ST-074/ST-075):**
 ```bash
 sonarsentinel detect data/samples/line_07.xtf --out results/ --formats json,csv
 ```

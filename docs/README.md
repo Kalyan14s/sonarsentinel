@@ -82,6 +82,8 @@ flowchart TB
 | [planning/PRODUCT_BACKLOG.md](planning/PRODUCT_BACKLOG.md) | Epics, stories, tasks, estimates, sprint allocation | Whole team | ✅ 🔄 |
 | [../TODO.md](../TODO.md) | Master phase-by-phase checklist: every story, gate, exit criterion and continuous task | Whole team | ✅ 🔄 |
 | [planning/PHASE0_REVIEW_SIGNOFF.md](planning/PHASE0_REVIEW_SIGNOFF.md) | Phase 0 review checklist, issue log and sign-off record per role | Whole team | ✅ team lead approved; R1–R5 confirm in Sprint 0 |
+| [planning/SPRINT_1_PLAN.md](planning/SPRINT_1_PLAN.md) | Sprint 1 goal, committed stories, schedule, exit criteria, risks | Whole team | ✅ |
+| [communications/OUTREACH_DRAFTS.md](communications/OUTREACH_DRAFTS.md) | Draft messages (SPOC, NIOT, GhostNetZero, dataset authors, mentor) + outreach tracker | PM, ML lead | 📝 drafts, not sent |
 
 ### Build
 | Document | Purpose | Primary audience | Status |
@@ -93,6 +95,7 @@ flowchart TB
 | [data/DATA_MANAGEMENT_PLAN.md](data/DATA_MANAGEMENT_PLAN.md) | Storage, versioning, splits, provenance, sensitivity | ML, data, DevOps | ✅ |
 | [ml/MODEL_CARD_TEMPLATE.md](ml/MODEL_CARD_TEMPLATE.md) | Model card for each released model | ML | 📝 |
 | [ml/EXPERIMENT_LOG_TEMPLATE.md](ml/EXPERIMENT_LOG_TEMPLATE.md) | Record of each training experiment | ML | 📝 |
+| [../ml/datasets/LICENSES.md](../ml/datasets/LICENSES.md) | Dataset licence register: status, evidence, allowed use, permissions log | ML, PM | ✅ 🔄 |
 
 ### Verify
 | Document | Purpose | Primary audience | Status |
@@ -108,6 +111,7 @@ flowchart TB
 | [guides/USER_MANUAL.md](guides/USER_MANUAL.md) | How to use the dashboard and CLI; interpreting results | Analysts, operators | ✅ |
 | [guides/OPERATIONS_RUNBOOK.md](guides/OPERATIONS_RUNBOOK.md) | Deploy, operate, monitor, troubleshoot, recover | Operators, DevOps | ✅ |
 | [hackathon/SIH_PRESENTATION.md](hackathon/SIH_PRESENTATION.md) | Slide-by-slide content for the SIH idea/finale deck | Presenters | ✅ |
+| [hackathon/idea-deck/SonarSentinel_SIH2026_Idea_DRAFT.pdf](hackathon/idea-deck/SonarSentinel_SIH2026_Idea_DRAFT.pdf) ([PowerPoint source](hackathon/idea-deck/SonarSentinel_SIH2026_Idea_DRAFT.pptx)) | SIH 2026 idea submission, built on the official template (6 slides) | Team leader, presenters | 📝 draft: fill team name/ID, review, then upload the PDF |
 | [hackathon/DEMO_SCRIPT.md](hackathon/DEMO_SCRIPT.md) | Timed demo, backup plan, judge Q&A | Presenters | ✅ |
 | [reports/FINAL_PROJECT_REPORT_TEMPLATE.md](reports/FINAL_PROJECT_REPORT_TEMPLATE.md) | Structure of the final technical report | Whole team | 📝 |
 | [legal/LICENSES_AND_COMPLIANCE.md](legal/LICENSES_AND_COMPLIANCE.md) | Third-party software and dataset licences; data sensitivity | Lead, legal/mentor | ✅ 🔄 |

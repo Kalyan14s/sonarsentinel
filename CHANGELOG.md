@@ -7,7 +7,27 @@ Categories: **Added** · **Changed** · **Deprecated** · **Removed** · **Fixed
 
 ## [Unreleased]
 
-*(Nothing yet: Sprint 0 is next.)*
+### Added
+- Working repository at `C:\dev\sonarsentinel` (git `main`); Phase 0 documentation baseline committed and tagged `docs-baseline-1.0`
+- Backend scaffold (ST-001): `sonarsentinel` package with typed errors matching the API error model, config loading and hashing, upload validation (stage S0: extension, size, magic bytes), and CLI (`version`, `validate`, `config`; `detect` and `serve` are placeholders)
+- `backend/environment.yml` (core + geo + dev), `backend/requirements-ml.txt` (Sprint 3), `.env.example`, root `ruff.toml`
+- CI workflow (ST-002): backend lint, format check, strict mypy, pytest with coverage; documentation checks; frontend job that activates once `frontend/package.json` exists
+- `scripts/fetch_test_data.py` with SHA-256 pinning and trust-on-first-use, manifest and tests (ST-004)
+- pre-commit hooks: whitespace, end-of-file, YAML/TOML, merge conflicts, large files, ruff (`LICENSE` and deck binaries excluded)
+- SIH 2026 idea deck draft (PPTX + PDF) built on the official template: `docs/hackathon/idea-deck/`
+- `docs/planning/SPRINT_1_PLAN.md`, `docs/communications/OUTREACH_DRAFTS.md`, `ml/datasets/LICENSES.md` (dataset licence register)
+- ADR-014: CSS Modules + CSS custom-property design tokens for the dashboard
+- Placeholder READMEs for `frontend/`, `edge/`, `docker/`, `ml/`
+
+### Changed
+- Developer Setup: split environment files documented; test commands run from `backend/` (same as CI); commands available now vs planned; note on using conda without PATH
+- Docs index lists the Sprint 1 plan, outreach drafts, licence register and idea deck
+- README: status, quick start (works today vs planned)
+
+### Notes
+- Verified on Windows 11 with Miniforge 26.7.2 (installer SHA-256 matched the GitHub release digest; signature valid) and Python 3.11.16: GDAL 3.12.3, rasterio 1.4.4, pyproj 3.7.2, OpenCV 5.0.0, pyxtf 1.5.0 import correctly
+- ruff check and format clean · mypy `--strict` no issues (14 files) · pytest 32 passed, 96% coverage · all pre-commit hooks pass
+- Not yet verified: CI on GitHub (repository not pushed), Ubuntu environment
 
 ## [0.2.0] — 2026-09-13 — Phase 0 complete
 
