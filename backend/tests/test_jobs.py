@@ -1,5 +1,6 @@
-"""ST-082: job worker — completed jobs are persisted, cancel stops within one chunk, failures
-are recorded, and jobs left over from a stopped server are failed on start-up."""
+"""ST-082/083: job worker — completed jobs are persisted and end with ``done`` (report links),
+cancel stops within one chunk and ends with ``done`` (status cancelled), failures emit ``error``,
+and jobs left over from a stopped server are failed on start-up."""
 
 from __future__ import annotations
 
@@ -98,6 +99,8 @@ def test_job_completes_and_is_persisted(
     tmp_path: Path, db: Database, config: dict[str, Any], survey_file: Path
 ) -> None:
     manager = JobManager(db, config, tmp_path)
+    seen: list[dict[str, Any]] = []
+    manager.add_listener(seen.append)
     manager.start()
     try:
         request = _queue(db, manager, [survey_file])
@@ -109,18 +112,24 @@ def test_job_completes_and_is_persisted(
     assert body["status"] == "completed_with_warnings", body
     assert body["percent"] == 100.0 and body["pings_total"] == N_PINGS
     assert "detect" in body["stage_timings_ms"] and body["finished_utc"]
-    report = json.loads(
-        (tmp_path / "results" / request.survey_id / "report.json").read_text("utf-8")
-    )
+    results = tmp_path / "results" / request.survey_id
+    report = json.loads((results / "report.json").read_text("utf-8"))
     assert _schema().is_valid(report) and report["survey"]["survey_id"] == request.survey_id
+    assert all((results / f"report.{fmt}").is_file() for fmt in ("csv", "geojson", "kml"))
     with db.session() as session:
         stored = session.scalar(select(func.count()).select_from(Detection))
         assert stored == report["summary"]["total_detections"]
-        assert {r.format for r in session.scalars(select(Report))} == {"json", "csv"}
+        formats = {r.format for r in session.scalars(select(Report))}
+        assert formats == {"json", "csv", "geojson", "kml"}
     events = _events(tmp_path, request.survey_id)
     assert all(e["job_id"] == request.job_id for e in events)
-    assert [e["seq"] for e in events] == sorted(e["seq"] for e in events)
-    assert events[-1]["type"] == "done" and len(manager.events[request.job_id]) == len(events)
+    assert [e["seq"] for e in events] == list(range(1, len(events) + 1))
+    done = events[-1]
+    assert done["type"] == "done" and sum(e["type"] == "done" for e in events) == 1
+    assert done["status"] == "completed_with_warnings" and done["summary"] == report["summary"]
+    assert done["report_urls"]["kml"].endswith(f"/surveys/{request.survey_id}/report?format=kml")
+    assert len(manager.events[request.job_id]) == len(events) and seen == events
+    assert manager.replay(request.job_id, len(events) - 2) == events[-2:]
     assert not (tmp_path / "work" / request.survey_id).exists()
 
 
@@ -146,11 +155,42 @@ def test_cancel_running_job_stops_within_one_chunk(
     assert replies == ["cancelling"] and body["status"] == "cancelled"
     events = _events(tmp_path, request.survey_id)
     chunks = [e for e in events if e["type"] == "progress" and e.get("stage") == "detect"]
-    assert len(chunks) == 1 and not any(e["type"] == "done" for e in events)
+    assert len(chunks) == 1
+    assert events[-1]["type"] == "done" and events[-1]["status"] == "cancelled"
+    assert events[-1]["report_urls"] == {} and events[-1]["seq"] == len(events)
     with db.session() as session:
+        # Detections stream per file after it finishes, so none exist yet in the first chunk.
         assert session.scalar(select(func.count()).select_from(Detection)) == 0
     with pytest.raises(JobNotCancellableError):
         manager.cancel(request.job_id)
+
+
+def test_cancel_keeps_detections_found_so_far(
+    tmp_path: Path, db: Database, config: dict[str, Any], survey_file: Path
+) -> None:
+    """ADR-018 §2: a cancelled job persists the detections already streamed (second file)."""
+    manager = JobManager(db, config, tmp_path)
+    replies: list[str] = []
+
+    def cancel_in_second_file(event: dict[str, Any]) -> None:
+        if event["type"] == "detection" and not replies:
+            replies.append(manager.cancel(event["job_id"]))
+
+    manager.add_listener(cancel_in_second_file)
+    manager.start()
+    try:
+        request = _queue(db, manager, [survey_file, survey_file])
+        body = manager.wait(request.job_id, timeout=120)
+    finally:
+        manager.stop()
+    assert body["status"] == "cancelled"
+    events = _events(tmp_path, request.survey_id)
+    streamed = {e["detection"]["detection_id"] for e in events if e["type"] == "detection"}
+    assert streamed
+    with db.session() as session:
+        stored = set(session.scalars(select(Detection.detection_id)))
+    assert stored == streamed
+    assert events[-1]["summary"]["total_detections"] == len(streamed)
 
 
 def test_cancel_queued_job(
@@ -166,6 +206,7 @@ def test_cancel_queued_job(
         manager.stop()
     assert body["status"] == "cancelled"
     assert not (tmp_path / "results" / request.survey_id / "job.log.jsonl").exists()
+    assert manager.replay(request.job_id) == []
     with pytest.raises(NotFoundError):
         manager.cancel("JOB-deadbeef")
 
@@ -174,6 +215,8 @@ def test_failed_job_and_recovery(tmp_path: Path, db: Database, config: dict[str,
     corrupt = tmp_path / "corrupt.xtf"
     corrupt.write_bytes(bytes(2048))
     manager = JobManager(db, config, tmp_path)
+    seen: list[dict[str, Any]] = []
+    manager.add_listener(seen.append)
     manager.start()
     try:
         request = _queue(db, manager, [corrupt])
@@ -183,6 +226,7 @@ def test_failed_job_and_recovery(tmp_path: Path, db: Database, config: dict[str,
     assert body["status"] == "failed" and body["error"]["code"] == "CORRUPT_HEADER"
     last = _events(tmp_path, request.survey_id)[-1]
     assert last["type"] == "error" and last["code"] == "CORRUPT_HEADER"
+    assert seen and seen[-1] == last  # listeners get the error event too
 
     # A job still "running" when the server stopped is failed when the next server starts.
     orphan = JobManager(db, config, tmp_path)

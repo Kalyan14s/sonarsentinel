@@ -19,6 +19,25 @@ def test_auto_falls_back_to_rule_based_without_weights(tmp_path: Path) -> None:
         build_detector("rcnn", None, cfg)
 
 
+def test_runtime_selects_onnx_or_torch_weights(tmp_path: Path) -> None:
+    """ADR-018 §10: auto prefers best.onnx when present and ONNX Runtime is installed."""
+    from sonarsentinel.detect.yolo import resolve_runtime_weights
+    from sonarsentinel.errors import ModelsNotLoadedError
+
+    pt = tmp_path / "best.pt"
+    pt.write_bytes(b"x")
+    assert resolve_runtime_weights(pt, "auto", onnxruntime_available=True) == pt
+    (tmp_path / "best.onnx").write_bytes(b"x")
+    assert resolve_runtime_weights(pt, "auto", onnxruntime_available=True).suffix == ".onnx"
+    assert resolve_runtime_weights(pt, "auto", onnxruntime_available=False) == pt
+    assert resolve_runtime_weights(pt, "torch", onnxruntime_available=True) == pt
+    assert resolve_runtime_weights(pt, "onnxruntime", onnxruntime_available=True).suffix == ".onnx"
+    with pytest.raises(ModelsNotLoadedError):
+        resolve_runtime_weights(pt, "onnxruntime", onnxruntime_available=False)
+    with pytest.raises(ValidationError, match="Unknown detection runtime"):
+        resolve_runtime_weights(pt, "tensorrt-gpu", onnxruntime_available=True)
+
+
 def test_anomaly_model_disabled_or_missing(tmp_path: Path) -> None:
     cfg = load_config()
     assert build_anomaly(cfg, disabled=True) is None

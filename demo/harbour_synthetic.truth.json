@@ -1,0 +1,55 @@
+{
+  "synthetic": true,
+  "class": "ghost_net",
+  "pixel_bbox": [
+    118,
+    263,
+    222,
+    378
+  ],
+  "centroid_px": [
+    172.7,
+    326.5
+  ],
+  "approx_lat": 13.095323,
+  "approx_lon": 80.304975,
+  "size_m": [
+    8.0,
+    4.0
+  ],
+  "height_m": 1.0,
+  "generator_version": "1.0.0",
+  "params": {
+    "seed": 20260914,
+    "tile_px": 640,
+    "res_m": 0.1,
+    "background": "C:/dev/sonarsentinel/data/interim/mine_sss/images/2017/0067_2017.jpg",
+    "background_group": "2017",
+    "crop_xy": [
+      79,
+      348
+    ],
+    "side": "port",
+    "center_xy": [
+      170,
+      330
+    ],
+    "mesh_cm": 13.33112491357272,
+    "crumple_px": 8.1262391495764,
+    "clump_length_m": 8.0,
+    "clump_width_m": 4.0,
+    "clump_angle_deg": 35.0,
+    "reflectivity": 110.0,
+    "burial_fraction": 0.1,
+    "height_m": 1.0,
+    "altitude_m": 10.0,
+    "ground_range_m": 15.0,
+    "shadow_length_px": 17,
+    "shadow_factor": 0.35,
+    "n_ropes": 2,
+    "n_floats": 3,
+    "generator_version": "1.0.0"
+  },
+  "background_licence": "Mine SSS dataset (D2), CC BY 4.0",
+  "note": "Synthetic ghost net on a real seabed background; fictional coordinates."
+}

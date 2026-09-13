@@ -35,7 +35,7 @@ flowchart LR
 | [3](#phase-3--sprint-2--preprocessing--training-data) | S2 | 09-28 → 10-02 | M2 | Clean, tiled sonar data; training data ready | 12 | 12 |
 | [4](#phase-4--sprint-3--models--thin-slice) | S3 | 10-05 → 10-09 | M3 · G2 | Trained models; CLI report end to end | 16 | 16 |
 | [5](#phase-5--sprint-4--scoring-reports--api) | S4 | 10-12 → 10-16 | M4 · G3 | Trustworthy confidence; reports; upload + jobs API | 17 | 17 |
-| [6](#phase-6--sprint-5--dashboard-p0-freeze) | S5 | 10-19 → 10-23 | M5 · G4 | Live dashboard end to end; P0 freeze | 44 | 0 |
+| [6](#phase-6--sprint-5--dashboard-p0-freeze) | S5 | 10-19 → 10-23 | M5 · G4 | Live dashboard end to end; P0 freeze | 44 | 9 |
 | [7](#phase-7--sprint-6--hardening-validation-edge--demo) | S6 | 10-26 → 10-30 | M6 · G5 | Validated, benchmarked, demo-ready release candidate | 24 | 0 |
 | [8](#phase-8--sih-finale--handover) | — | Proposed Dec 2026 | Finale | Win the demo; hand over cleanly | 11 | 0 |
 | [Continuous](#continuous-tasks-every-sprint) | all | weekly | — | Keep the project healthy | 10 recurring | — |
@@ -261,7 +261,7 @@ flowchart LR
 
 **Dates:** 2026-10-19 → 10-23 · **Milestone:** M5 · **Gate:** G4 (P0 complete) · **Sprint goal:** live dashboard end to end.
 
-> **Status:** 🟡 in progress (started 2026-09-14).
+> **Status:** 🟡 in progress (started 2026-09-14, [Sprint 5 plan](docs/planning/SPRINT_5_PLAN.md)). WebSocket streaming, results/review/export API, GeoJSON/KML, the dashboard (live map, filters, drawer, reports), uncertainty, mosaic, surface band and the ONNX CPU path are built and tested ([TSR-M5](docs/testing/reports/TSR-M5.md)). **Open:** manual viewer/browser checks, AC-05 (needs GPU-trained models), demo assets A1/A2, screenshots, the P0 freeze decision, and the carried-over people/data items.
 
 ### Carried over from Phase 5
 - [ ] Get the team ID from the SIH portal and add it to the deck (team name Vashishta is already on it); re-export the PDF *(moved from Phase 1, 2, 3, 4, then 5)* — R6
@@ -291,35 +291,35 @@ flowchart LR
 - [ ] M4/G3 exit: model metrics ≥ 80% of PRD targets. ***Not met:** baseline val mAP@50 0.283 vs ≥ 0.56; ghost-net recall not measured (ST-051 blocked); needs GPU-trained models* *(moved from Phase 5)*
 
 ### Backend
-- [ ] **ST-083** WebSocket events with `seq` and replay — P0 · R4 · 5 pts
-- [ ] **ST-084** Surveys, detections, track, report endpoints — P0 · R4 · 3 pts
-- [ ] **ST-086** Review `PATCH` (incl. reject reason) + label store — P1 · R4 · 3 pts
+- [x] **ST-083** WebSocket events with `seq` and replay — P0 · R4 · 5 pts. *`api/ws.py`: resume after `seq`, ping/pong, replay from memory or `job.log.jsonl` (survives a restart), live tail without duplicates, close 1000 after `done`/`error`, 4404 for unknown jobs; `done` sent after results are stored with `report_urls` and `mosaic` (TC-WS-001, 004, 005, 006 in `test_ws.py`; TC-UI-014 in the dashboard tests)*
+- [x] **ST-084** Surveys, detections, track, report endpoints — P0 · R4 · 3 pts. *`api/results.py` + shared `api/filters.py`: survey list/detail, detections with class/confidence/tier/review/flags/bbox filters, sort and paging, track with quality segments, reports in four formats and four scopes, chip and mosaic images (TC-API-004, 007, TC-REP-007 in `test_api_results.py`; filters checked against an independent reference)*
+- [x] **ST-086** Review `PATCH` (incl. reject reason) + label store — P1 · R4 · 3 pts. *Confirm, reject (reason required), reclassify, undo; REVIEW rows and `labels/<yyyy-mm>/<detection_id>/label.json` + chip; exports reflect reviews (TC-API-005)*
 
 ### Frontend
-- [ ] **ST-092** Live map: streaming markers, track, quality segments (S-02) — P0 · R5 · 8 pts
-- [ ] **ST-093** Filters + detection list — P0 · R5 · 5 pts
-- [ ] **ST-094** Detection detail drawer (S-03) — P0 · R5 · 5 pts
-- [ ] **ST-095** Reports & export screen (S-06) — P0 · R5 · 3 pts
+- [ ] **ST-092** Live map: streaming markers, track, quality segments (S-02) — P0 · R5 · 8 pts. *Built: incremental Leaflet layers, clustered markers, growing track with start/current markers, dropout/high-motion segments, footprints at zoom ≥ 17, mosaic overlay, auto-fit until the user pans, progress/ETA, Stop with confirmation, Reconnecting/failed/not-geotagged states; AC-01 checked end to end at API level (TC-E2E-001) and TC-UI-003, 007, 009, 014 in Vitest. **Open:** frame-rate check with 2,000 clustered markers in a real browser*
+- [x] **ST-093** Filters + detection list — P0 · R5 · 5 pts. *Client-side filters (class, confidence range, tier, flags, review status) with the same rules as the API and URL sync; windowed list sortable by confidence, area, class, ping; keyboard F/L/↑/↓/Enter/Esc; filtering 2,000 detections < 100 ms (TC-UI-004)*
+- [x] **ST-094** Detection detail drawer (S-03) — P0 · R5 · 5 pts. *Chip with overlay switch and retry, DD 6 dp + DMS identical to the backend formatter, copy with toast, size/depth/uncertainty, "Why N%?" score bars, flags, review actions; values match the detection JSON (TC-UI-005, 006)*
+- [x] **ST-095** Reports & export screen (S-06) — P0 · R5 · 3 pts. *Survey selector, four format cards (GeoJSON/KML disabled without GPS), All/Current filters/Hazards/Confirmed scopes, include-rejected, preview, per-format downloads, partial banner (TC-UI-008); downloads served by ST-084*
 
 ### Geo & reports
-- [ ] **ST-035** Position uncertainty budget — P1 · R3 · 2 pts
-- [ ] **ST-036** GCP-based georeferenced mosaic — P1 · R3 · 5 pts
-- [ ] **ST-047** Surface-return band mask — P1 · R2 · 2 pts
-- [ ] **ST-072** GeoJSON + KML export — P1 · R3 · 3 pts
+- [x] **ST-035** Position uncertainty budget — P1 · R3 · 2 pts. *`geo/uncertainty.py` RSS of GNSS, layback, heading, altitude, time and pixel terms with `geo.uncertainty` defaults; `position.uncertainty_m` on every geotagged detection (TC-GEO-010 unit and end to end)*
+- [ ] **ST-036** GCP-based georeferenced mosaic — P1 · R3 · 5 pts. *Built: `geo/mosaic.py` (rasterio GCP thin-plate-spline warp to EPSG:4326) writes `mosaic.tif`/`.png`/bounds per survey, served at `/surveys/{id}/mosaic.png` and overlaid on the live map; TC-GEO-011 residual 0.20 m mean / 0.32 m max on a curved synthetic track. Limit: in multi-line surveys the last line's mosaic is kept. **Open:** visual alignment check in QGIS*
+- [ ] **ST-047** Surface-return band mask — P1 · R2 · 2 pts. *Built: `preprocess/surface.py` band from slant range ≈ sensor depth; in-band detections flagged `SURFACE_RETURN_BAND`, linear track-parallel ones dropped when `preprocess.surface_return_mask` is on (TC-PRE-012 on synthetic geometry). **Open:** confirm on a real shallow-water sample file*
+- [ ] **ST-072** GeoJSON + KML export — P1 · R3 · 3 pts. *Built: RFC 7946 GeoJSON (points, footprints) and KML (class folders, styles, description tables, footprints, track), from CLI, jobs and the report endpoint (TC-REP-003, TC-REP-004 structure). **Open:** open them in QGIS and Google Earth (manual AC-07 part)*
 
 ### ML & edge
-- [ ] **ST-056** ⭐ U-Net mask refiner — P1 · R1 · 5 pts
-- [ ] **ST-100** ONNX export + ONNX Runtime CPU path — P1 · R6 · 3 pts
+- [ ] **ST-056** ⭐ U-Net mask refiner — P1 · R1 · 5 pts. *Not started: needs GPU training (stretch, dropped first per the plan)*
+- [x] **ST-100** ONNX export + ONNX Runtime CPU path — P1 · R6 · 3 pts. *`ml/export_onnx.py` + `detection.runtime: auto`: TC-EDGE-001 parity 38/38 detections matched, 0 score mismatches; 150 vs 170 ms per tile on an idle CPU; full `detect` on a 0.444 km USGS line in 97.5 s ≈ 220 s per km (NFR-02 ≤ 300 s, extrapolated on a laptop; formal TC-PERF-002 with a 1 km line in ST-112) — [EXP-20260914-onnx](ml/experiments/EXP-20260914-onnx.md)*
 
 ### Other tasks
-- [ ] Automate TC-E2E-001…003, TC-WS-001…006, TC-UI-001…010 — R5, R4
-- [ ] Prepare demo assets A1–A3 ([Demo Script §1](docs/hackathon/DEMO_SCRIPT.md#1-demo-assets)) — R6
-- [ ] Add real screenshots to the User Manual — R5
-- [ ] Declare **P0 freeze**; only fixes, validation, docs, approved stretch after this — R6
+- [x] Automate TC-E2E-001…003, TC-WS-001…006, TC-UI-001…010 — R5, R4. *TC-E2E-001…003 at API level (`test_e2e_api.py`), TC-WS-001, 004, 005, 006 (`test_ws.py`), TC-UI-001…009 and 014 in Vitest. TC-WS-002/003 timing on TD-02 and TC-UI-010 (axe, screen reader) remain manual*
+- [ ] Prepare demo assets A1–A3 ([Demo Script §1](docs/hackathon/DEMO_SCRIPT.md#1-demo-assets)) — R6. *A3 ready: [demo/](demo/README.md) synthetic ghost-net PNG + nav CSV + ground truth (labelled synthetic; the CPU baseline finds it only as a hidden low-confidence `cylinder`). **Open:** A1/A2 need a real line over a charted wreck (ST-013)*
+- [ ] Add real screenshots to the User Manual — R5. *Needs the running dashboard on real data (people)*
+- [ ] Declare **P0 freeze**; only fixes, validation, docs, approved stretch after this — R6. *Team decision; P0 items still open (ST-092 browser check and carried data items)*
 
 ### Exit criteria (M5 / G4)
-- [ ] All P0 stories Done
-- [ ] AC-01…AC-05 and AC-07 pass end to end
+- [ ] All P0 stories Done. *Open P0: ST-092 (browser frame-rate check), ST-060 (AC-08), ST-071 (spreadsheet check) and the carried data/labelling stories ST-010, 011, 013, 014, 048*
+- [ ] AC-01…AC-05 and AC-07 pass end to end. *AC-01, 02, 03 pass at API level on synthetic data; AC-04 confidence/tier and slider ✓; AC-05 open (ghost-net recall needs GPU-trained models); AC-07 JSON/CSV/GeoJSON/KML generated and structure-tested, viewer checks open*
 
 ---
 

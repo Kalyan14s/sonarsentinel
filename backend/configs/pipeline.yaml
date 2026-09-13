@@ -24,7 +24,8 @@ preprocess:
   local_std_window: 7
   dropout: { min_row_std_ratio: 0.05, max_inpaint_gap_pings: 3 }
   motion: { max_roll_deg: 5, max_pitch_deg: 5, max_yaw_rate_deg_per_ping: 3 }
-  surface_return_mask: false
+  surface_return_mask: false       # true: drop linear track-parallel detections in the surface-return band (all in-band detections are flagged)
+  surface_return_tolerance_m: 0.5
 
 tiling:
   size_px: 640
@@ -60,8 +61,15 @@ geo:
   datum: WGS84
   cluster_radius_m: 5
   coordinate_decimals: 6
+  uncertainty:                     # 1-σ horizontal budget (04 §8, ADR-018): RSS of the terms below
+    gnss_m: 2.0                    # standalone GNSS; ~0.5 with SBAS, ~0.05 with RTK
+    heading_deg: 2.0               # heading error → ground_range · sin(σ)
+    altitude_m: 0.5                # altitude error → σ · altitude / ground_range
+    time_s: 0.2                    # ping time error → speed · σ
+    layback_fraction: 0.10         # of the estimated layback (0 when layback is measured or manual)
 
 report:
   formats: [json, csv, geojson, kml]
   chip_size_px: 256
-  mosaic: true
+  mosaic: true                     # GCP mosaic under results/<survey_id>/ when a results folder is given (ST-036)
+  mosaic_ground_res_m: 0.25

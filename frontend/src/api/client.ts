@@ -1,11 +1,22 @@
 /**
- * Typed client for the SonarSentinel API (docs/architecture/05-api-specification.md).
+ * Typed client for the SonarSentinel API (docs/architecture/05-api-specification.md, ADR-018).
  * Report and detection types are generated from the backend JSON Schema (npm run gen:types).
  */
 import type { SonarSentinelDetectionReport10 as Report } from './report-schema';
 
 export type { Report };
 export type Detection = Report['detections'][number];
+export type ReviewStatus = Detection['review']['status'];
+export type RejectReason = NonNullable<Detection['review']['reject_reason']>;
+export type QualityFlag = Detection['quality_flags'][number];
+
+export type ReportFormat = 'json' | 'csv' | 'geojson' | 'kml';
+export type ReportScope = 'all' | 'filtered' | 'hazards' | 'confirmed';
+export type ChipOverlay = 'mask' | 'shadow' | 'anomaly' | 'none';
+export type ReportUrls = Record<ReportFormat, string>;
+
+export const REPORT_FORMATS: ReportFormat[] = ['json', 'csv', 'geojson', 'kml'];
+export const REJECT_REASONS: RejectReason[] = ['rock', 'shadow', 'ripples', 'noise', 'other'];
 
 export interface ApiErrorBody {
   error: { code: string; message: string; details: Record<string, unknown> };
@@ -31,6 +42,14 @@ export interface SurveySummary {
   bbox: [number, number, number, number] | null;
   track_length_km: number | null;
   summary: Report['summary'];
+  report_urls?: Partial<ReportUrls>;
+  mosaic?: MosaicInfo | null;
+}
+
+/** Mosaic PNG and Leaflet bounds `[[south, west], [north, east]]` (ST-036). */
+export interface MosaicInfo {
+  url: string;
+  bounds: [[number, number], [number, number]];
 }
 
 export interface Paged<T> {
@@ -38,18 +57,44 @@ export interface Paged<T> {
   items: T[];
 }
 
+export interface TrackProperties {
+  segment?: 'track' | 'quality';
+  code?: string;
+  ping_start?: number;
+  ping_end?: number;
+}
+
+/** `GET /surveys/{id}/track`: coordinates are GeoJSON `[lon, lat]`. */
 export interface TrackGeoJson {
   type: 'FeatureCollection';
-  features: { type: 'Feature'; geometry: { type: 'LineString'; coordinates: [number, number][] } }[];
+  features: {
+    type: 'Feature';
+    properties?: TrackProperties | null;
+    geometry: { type: 'LineString'; coordinates: [number, number][] };
+  }[];
 }
+
+export type DetectionSort = 'confidence' | '-confidence' | 'area' | '-area' | 'ping' | '-ping' | 'class';
 
 export interface DetectionQuery {
   class?: string[];
   min_conf?: number;
+  max_conf?: number;
   tier?: string[];
-  sort?: 'confidence' | '-confidence' | 'area' | 'ping';
+  review_status?: string[];
+  flags?: string[];
+  bbox?: [number, number, number, number];
+  sort?: DetectionSort;
   limit?: number;
   offset?: number;
+}
+
+export interface ReviewRequest {
+  review_status: ReviewStatus;
+  class?: string;
+  reject_reason?: RejectReason;
+  note?: string;
+  reviewer?: string;
 }
 
 export interface ModelInfo {
@@ -108,15 +153,40 @@ export interface UploadProgress {
   total: number;
 }
 
+interface EventBase {
+  seq: number;
+  job_id?: string;
+  ts?: string;
+}
+
+/** WebSocket messages of `/ws/jobs/{job_id}` (API spec §3). */
 export type JobEvent =
-  | { type: 'progress'; seq: number; stage: string; percent: number; pings_done?: number; pings_total?: number }
-  | { type: 'track'; seq: number; points: [number, number][]; ping_start: number; ping_end: number }
-  | { type: 'detection'; seq: number; detection: Detection }
-  | { type: 'warning'; seq: number; code: string; message: string; ping_start: number; ping_end: number }
-  | { type: 'done'; seq: number; status: string; summary: Report['summary'] }
-  | { type: 'error'; seq: number; code: string; message: string };
+  | (EventBase & {
+      type: 'progress';
+      stage: string;
+      percent: number;
+      eta_s?: number | null;
+      pings_done?: number;
+      pings_total?: number;
+    })
+  | (EventBase & { type: 'track'; points: [number, number][]; ping_start: number; ping_end: number })
+  | (EventBase & { type: 'detection'; detection: Detection })
+  | (EventBase & { type: 'detection_update'; detection: Detection })
+  | (EventBase & { type: 'detection_removed'; detection_id: string; merged_into?: string | null })
+  | (EventBase & { type: 'warning'; code: string; message: string; ping_start: number; ping_end: number })
+  | (EventBase & {
+      type: 'done';
+      status: string;
+      summary: Report['summary'];
+      report_urls?: Partial<ReportUrls>;
+      mosaic?: MosaicInfo | null;
+    })
+  | (EventBase & { type: 'error'; code: string; message: string });
+
+export type ConnectionStatus = 'connecting' | 'live' | 'reconnecting' | 'closed';
 
 const API = '/api/v1';
+const enc = encodeURIComponent;
 
 function apiErrorFrom(status: number, body: unknown, fallback: string): ApiError {
   const error = (body as Partial<ApiErrorBody> | undefined)?.error;
@@ -150,16 +220,38 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-export function detectionQueryString(query: DetectionQuery): string {
-  const params = new URLSearchParams();
+function filterParams(params: URLSearchParams, query: DetectionQuery): void {
   if (query.class?.length) params.set('class', query.class.join(','));
   if (query.tier?.length) params.set('tier', query.tier.join(','));
   if (query.min_conf !== undefined) params.set('min_conf', String(query.min_conf));
+  if (query.max_conf !== undefined) params.set('max_conf', String(query.max_conf));
+  if (query.review_status?.length) params.set('review_status', query.review_status.join(','));
+  if (query.flags?.length) params.set('flags', query.flags.join(','));
+  if (query.bbox) params.set('bbox', query.bbox.join(','));
+}
+
+export function detectionQueryString(query: DetectionQuery): string {
+  const params = new URLSearchParams();
+  filterParams(params, query);
   if (query.sort) params.set('sort', query.sort);
   if (query.limit !== undefined) params.set('limit', String(query.limit));
   if (query.offset !== undefined) params.set('offset', String(query.offset));
   const text = params.toString();
   return text ? `?${text}` : '';
+}
+
+export interface ReportOptions {
+  scope?: ReportScope;
+  includeRejected?: boolean;
+  /** Detection filters, sent only with `scope: 'filtered'`. */
+  filters?: DetectionQuery;
+}
+
+export function reportQueryString(format: ReportFormat, options: ReportOptions = {}): string {
+  const params = new URLSearchParams({ format, scope: options.scope ?? 'all' });
+  if (options.scope === 'filtered' && options.filters) filterParams(params, options.filters);
+  if (options.includeRejected) params.set('include_rejected', 'true');
+  return `?${params.toString()}`;
 }
 
 /** Multipart form shared by validate and create: `files`, optional `nav_csv`, `options` JSON. */
@@ -175,12 +267,23 @@ export const api = {
   health: () => request<{ status: string; version: string; runtime: string }>('/health'),
   models: () => request<Paged<ModelInfo>>('/models'),
   surveys: () => request<Paged<SurveySummary>>('/surveys'),
-  survey: (id: string) => request<SurveySummary>(`/surveys/${encodeURIComponent(id)}`),
-  track: (id: string) => request<TrackGeoJson>(`/surveys/${encodeURIComponent(id)}/track`),
+  survey: (id: string) => request<SurveySummary>(`/surveys/${enc(id)}`),
+  track: (id: string) => request<TrackGeoJson>(`/surveys/${enc(id)}/track`),
   detections: (id: string, query: DetectionQuery = {}) =>
-    request<Paged<Detection>>(`/surveys/${encodeURIComponent(id)}/detections${detectionQueryString(query)}`),
-  reportUrl: (id: string, format: 'json' | 'csv') =>
-    `${API}/surveys/${encodeURIComponent(id)}/report?format=${format}`,
+    request<Paged<Detection>>(`/surveys/${enc(id)}/detections${detectionQueryString(query)}`),
+  detection: (id: string) => request<Detection>(`/detections/${enc(id)}`),
+  reviewDetection: (id: string, body: ReviewRequest) =>
+    request<Detection>(`/detections/${enc(id)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+  cancelJob: (jobId: string) =>
+    request<{ job_id: string; status: string }>(`/jobs/${enc(jobId)}/cancel`, { method: 'POST' }),
+  reportUrl: (id: string, format: ReportFormat, options: ReportOptions = {}) =>
+    `${API}/surveys/${enc(id)}/report${reportQueryString(format, options)}`,
+  chipUrl: (id: string, overlay: ChipOverlay = 'mask') =>
+    `${API}/detections/${enc(id)}/chip.png?overlay=${overlay}`,
 };
 
 /**
@@ -241,43 +344,87 @@ export function createSurvey(
   });
 }
 
+/** Close codes of `/ws/jobs/{id}` (ADR-018). */
+export const WS_CLOSE_NORMAL = 1000;
+export const WS_CLOSE_UNKNOWN_JOB = 4404;
+const WS_OPEN = 1;
+
+export interface SubscribeOptions {
+  baseUrl?: string;
+  onStatus?: (status: ConnectionStatus) => void;
+  /** Injected in tests. */
+  WebSocketImpl?: typeof WebSocket;
+  pingIntervalMs?: number;
+  initialBackoffMs?: number;
+  maxBackoffMs?: number;
+}
+
 /**
- * Subscribe to job events; reconnects once with `resume` so no events are lost.
- * Returns a function that closes the socket.
+ * Follow a job's events (TC-WS-004, TC-UI-014). Sends `resume` with the last seen `seq` on every
+ * (re)connect, drops duplicates, pings every 20 s and reconnects with exponential backoff (≤ 10 s)
+ * until the job ends (`done`/`error`), the server reports an unknown job (4404) or the caller
+ * unsubscribes. Returns the unsubscribe function.
  */
 export function subscribeToJob(
   jobId: string,
   onEvent: (event: JobEvent) => void,
-  options: { baseUrl?: string } = {},
+  options: SubscribeOptions = {},
 ): () => void {
+  const {
+    onStatus,
+    WebSocketImpl = WebSocket,
+    pingIntervalMs = 20_000,
+    initialBackoffMs = 500,
+    maxBackoffMs = 10_000,
+  } = options;
   const base = options.baseUrl ?? `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`;
   let lastSeq = 0;
-  let closed = false;
-  let retried = false;
-  let socket: WebSocket;
+  let attempt = 0;
+  let stopped = false;
+  let finished = false;
+  let socket: WebSocket | null = null;
+  let pingTimer: ReturnType<typeof setInterval> | undefined;
+  let retryTimer: ReturnType<typeof setTimeout> | undefined;
 
-  const open = () => {
-    socket = new WebSocket(`${base}/ws/jobs/${encodeURIComponent(jobId)}`);
-    socket.onopen = () => {
-      if (lastSeq > 0) socket.send(JSON.stringify({ type: 'resume', after_seq: lastSeq }));
+  const connect = () => {
+    onStatus?.(attempt === 0 ? 'connecting' : 'reconnecting');
+    const ws = new WebSocketImpl(`${base}/ws/jobs/${enc(jobId)}`);
+    socket = ws;
+    ws.onopen = () => {
+      attempt = 0;
+      ws.send(JSON.stringify({ type: 'resume', after_seq: lastSeq }));
+      onStatus?.('live');
+      pingTimer = setInterval(() => {
+        if (ws.readyState === WS_OPEN) ws.send(JSON.stringify({ type: 'ping' }));
+      }, pingIntervalMs);
     };
-    socket.onmessage = (message) => {
-      const event = JSON.parse(String(message.data)) as JobEvent;
-      if (event.seq <= lastSeq) return;
-      lastSeq = event.seq;
+    ws.onmessage = (message) => {
+      const event = parseJson(String(message.data)) as JobEvent | { type: 'pong' } | undefined;
+      if (!event || event.type === 'pong') return;
+      if (typeof event.seq === 'number') {
+        if (event.seq <= lastSeq) return;
+        lastSeq = event.seq;
+      }
+      if (event.type === 'done' || event.type === 'error') finished = true;
       onEvent(event);
     };
-    socket.onclose = () => {
-      const finished = lastSeq > 0 && closed;
-      if (!closed && !finished && !retried && lastSeq > 0) {
-        retried = true;
-        open();
+    ws.onclose = (close) => {
+      clearInterval(pingTimer);
+      if (stopped || finished || close.code === WS_CLOSE_UNKNOWN_JOB) {
+        onStatus?.('closed');
+        return;
       }
+      attempt += 1;
+      onStatus?.('reconnecting');
+      retryTimer = setTimeout(connect, Math.min(initialBackoffMs * 2 ** (attempt - 1), maxBackoffMs));
     };
   };
-  open();
+
+  connect();
   return () => {
-    closed = true;
-    socket.close();
+    stopped = true;
+    clearInterval(pingTimer);
+    clearTimeout(retryTimer);
+    socket?.close();
   };
 }

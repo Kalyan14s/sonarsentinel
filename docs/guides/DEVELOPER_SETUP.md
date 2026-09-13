@@ -94,6 +94,8 @@ python ml/train_detector.py --data data/processed/yolo/0.1.0-real/data.yaml \
 python ml/evaluate.py --data data/processed/yolo/0.1.0-real --split val \
     --model models/detector/yolo11s-seg-sonar-real/0.1.0/best.pt --out models/detector/yolo11s-seg-sonar-real/0.1.0/eval_val
 python ml/train_anomaly.py --holdout-groups 2017 --version 0.1.0   # PatchCore memory bank + AUROC
+python ml/export_onnx.py --model models/detector/yolo11s-seg-sonar-real/0.1.0/best.pt \
+    --data data/processed/yolo/0.1.0-real --split val --images 100   # best.onnx + TC-EDGE-001 parity (needs onnx, onnxslim)
 ```
 
 ### 3.2.1 Frontend (dashboard)

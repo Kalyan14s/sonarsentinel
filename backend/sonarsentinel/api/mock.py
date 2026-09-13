@@ -1,11 +1,11 @@
-"""Mock API server for frontend development (ST-087).
+"""Mock API server for frontend development (ST-087; routes of ST-083/084/086/072, ADR-018).
 
 Serves one canned survey (``fixtures/mock_report.json``) and its recorded job events
-(``fixtures/mock_events.json``) through the real endpoint shapes of
-``docs/architecture/05-api-specification.md``: surveys, filtered detections, track, report
-downloads, jobs, review ``PATCH`` and the ``/ws/jobs/{job_id}`` event stream with ``seq`` and
-``resume``. State (reviews, cancellation) is in memory and resets on restart. Fixtures are
-regenerated with ``scripts/make_mock_fixtures.py``.
+(``fixtures/mock_events.json``) through the same endpoint shapes as the real API: surveys, filtered
+detections, track with quality segments, report downloads in four formats and scopes, chips
+(placeholder PNGs), jobs, review ``PATCH`` and the ``/ws/jobs/{job_id}`` event stream with ``seq``,
+``resume`` and ``ping``. Filtering, review validation and exports use the real modules. State
+(reviews) is in memory and resets on restart. Fixtures come from ``scripts/make_mock_fixtures.py``.
 
     sonarsentinel serve --mock --port 8001
 """
@@ -14,33 +14,69 @@ from __future__ import annotations
 
 import asyncio
 import copy
-import csv
-import io
 import json
+import struct
+import zlib
 from importlib import resources
 from typing import Any
 
 from fastapi import APIRouter, FastAPI, Query, Request, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import Response
 
 from sonarsentinel import __version__
-from sonarsentinel.errors import (
-    JobNotCancellableError,
-    NotFoundError,
-    SonarSentinelError,
-    ValidationError,
+from sonarsentinel.api.filters import (
+    MAX_LIMIT,
+    parse_query,
+    query_detections,
+    select_scope,
+    summarize,
 )
-from sonarsentinel.report.export import to_csv
+from sonarsentinel.api.handlers import install_handlers
+from sonarsentinel.api.review import apply_review, parse_review
+from sonarsentinel.api.ws import (
+    CLOSE_NORMAL,
+    CLOSE_NOT_FOUND,
+    TERMINAL_EVENTS,
+    first_message,
+    pong,
+    resume_after,
+)
+from sonarsentinel.errors import JobNotCancellableError, NotFoundError, ValidationError
+from sonarsentinel.report.builder import now_utc
+from sonarsentinel.report.chips import OVERLAYS
+from sonarsentinel.report.export import (
+    GEO_FORMATS,
+    MEDIA_TYPES,
+    SUPPORTED_FORMATS,
+    report_is_geotagged,
+    serialize,
+    track_coords,
+    track_feature_collection,
+)
 
 API = "/api/v1"
-TIER_ORDER = {"hazard": 0, "review": 1, "anomaly": 2, "hidden": 3}
-REJECT_REASONS = {"rock", "shadow", "ripples", "noise", "other"}
 
 
 def _fixture(name: str) -> Any:
     text = resources.files("sonarsentinel.api").joinpath("fixtures", name).read_text("utf-8")
     return json.loads(text)
+
+
+def placeholder_png(size: int = 256, grey: int = 96) -> bytes:
+    """A plain grey 8-bit greyscale PNG (no image library needed)."""
+
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        crc = zlib.crc32(tag + data) & 0xFFFFFFFF
+        return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", crc)
+
+    rows = b"".join(b"\x00" + bytes([grey]) * size for _ in range(size))
+    header = struct.pack(">IIBBBBB", size, size, 8, 0, 0, 0, 0)
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", header)
+        + chunk(b"IDAT", zlib.compress(rows))
+        + chunk(b"IEND", b"")
+    )
 
 
 class MockState:
@@ -57,13 +93,35 @@ class MockState:
         self.detections: dict[str, dict[str, Any]] = {
             d["detection_id"]: d for d in self.report["detections"]
         }
+        self.track = [
+            {k: e.get(k) for k in ("points", "ping_start", "ping_end")}
+            for e in self.events
+            if e["type"] == "track"
+        ]
+        self.quality = [
+            {k: e.get(k) for k in ("code", "ping_start", "ping_end", "message")}
+            for e in self.events
+            if e["type"] == "warning"
+        ]
+
+    def report_urls(self) -> dict[str, str]:
+        geotagged = report_is_geotagged(self.report)
+        return {
+            fmt: f"{API}/surveys/{self.survey_id}/report?format={fmt}"
+            for fmt in SUPPORTED_FORMATS
+            if geotagged or fmt not in GEO_FORMATS
+        }
 
     def survey_summary(self) -> dict[str, Any]:
         survey = self.report["survey"]
         return {
             "survey_id": self.survey_id,
             "name": survey["name"],
+            "project": survey.get("project"),
+            "status": self.job_status,
             "created_utc": self.report["generated_utc"],
+            "start_utc": survey.get("start_utc"),
+            "end_utc": survey.get("end_utc"),
             "source_files": survey["source_files"],
             "job": {
                 "job_id": self.job_id,
@@ -72,86 +130,33 @@ class MockState:
             },
             "bbox": survey["bbox"],
             "track_length_km": survey["track_length_km"],
-            "summary": self.report["summary"],
+            "summary": summarize(self.detections.values()),
         }
 
-
-def _csv_param(value: str | None) -> set[str] | None:
-    return {v.strip() for v in value.split(",") if v.strip()} if value else None
-
-
-def filter_detections(
-    items: list[dict[str, Any]],
-    *,
-    cls: str | None = None,
-    min_conf: float | None = None,
-    max_conf: float | None = None,
-    tier: str | None = None,
-    review_status: str | None = None,
-    flags: str | None = None,
-    bbox: str | None = None,
-    sort: str | None = None,
-) -> list[dict[str, Any]]:
-    """The query semantics of ``GET /surveys/{id}/detections`` (API spec §2.4)."""
-    classes, tiers, statuses, wanted_flags = map(_csv_param, (cls, tier, review_status, flags))
-    box = None
-    if bbox:
-        try:
-            box = [float(v) for v in bbox.split(",")]
-            assert len(box) == 4
-        except (ValueError, AssertionError) as exc:
-            raise ValidationError("bbox must be minLon,minLat,maxLon,maxLat", bbox=bbox) from exc
-    out = []
-    for d in items:
-        pos = d["position"]
-        if classes and d["class"] not in classes:
-            continue
-        if min_conf is not None and d["confidence"] < min_conf:
-            continue
-        if max_conf is not None and d["confidence"] > max_conf:
-            continue
-        if tiers and d["alert_tier"] not in tiers:
-            continue
-        if statuses and d["review"]["status"] not in statuses:
-            continue
-        if wanted_flags and not wanted_flags & set(d["quality_flags"]):
-            continue
-        if box and (
-            pos["lat"] is None
-            or not (box[0] <= pos["lon"] <= box[2] and box[1] <= pos["lat"] <= box[3])
-        ):
-            continue
-        out.append(d)
-    keys = {
-        "confidence": lambda d: d["confidence"],
-        "-confidence": lambda d: -d["confidence"],
-        "area": lambda d: d["dimensions"]["area_m2"] or 0.0,
-        "ping": lambda d: d["sonar_ref"].get("ping_start") or 0,
-    }
-    if sort:
-        if sort not in keys:
-            raise ValidationError(f"Unknown sort: {sort}", supported=sorted(keys))
-        out.sort(key=keys[sort])
-    return out
+    def stream(self) -> list[dict[str, Any]]:
+        """Recorded events with the manager's ``done`` fields (ADR-018 §2)."""
+        events = []
+        for event in self.events:
+            item = event | {"job_id": self.job_id}
+            if item["type"] == "done":
+                item |= {"report_urls": self.report_urls(), "mosaic": None}
+            events.append(item)
+        return events
 
 
 def create_mock_app(event_delay_s: float = 0.05) -> FastAPI:
     state = MockState()
     app = FastAPI(title="SonarSentinel mock API", version=__version__, docs_url="/docs")
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    @app.exception_handler(SonarSentinelError)
-    async def error(_: Request, exc: SonarSentinelError) -> JSONResponse:
-        return JSONResponse(status_code=exc.http_status, content=exc.to_dict())
+    install_handlers(app)
 
     def survey_or_404(survey_id: str) -> None:
         if survey_id != state.survey_id:
             raise NotFoundError(f"Survey {survey_id} not found", survey_id=survey_id)
+
+    def detection_or_404(detection_id: str) -> dict[str, Any]:
+        if detection_id not in state.detections:
+            raise NotFoundError(f"Detection {detection_id} not found", detection_id=detection_id)
+        return state.detections[detection_id]
 
     r = APIRouter(prefix=API)
 
@@ -201,32 +206,20 @@ def create_mock_app(event_delay_s: float = 0.05) -> FastAPI:
         }
 
     @r.get("/surveys")
-    def surveys() -> dict[str, Any]:
-        return {"total": 1, "items": [state.survey_summary()]}
+    def surveys(
+        limit: int = Query(50, ge=1, le=500), offset: int = Query(0, ge=0)
+    ) -> dict[str, Any]:
+        return {"total": 1, "items": [state.survey_summary()][offset : offset + limit]}
 
     @r.get("/surveys/{survey_id}")
     def survey(survey_id: str) -> dict[str, Any]:
         survey_or_404(survey_id)
-        base = f"{API}/surveys/{survey_id}/report?format="
-        return state.survey_summary() | {"report_urls": {f: base + f for f in ("json", "csv")}}
+        return state.survey_summary() | {"report_urls": state.report_urls()}
 
     @r.get("/surveys/{survey_id}/track")
     def track(survey_id: str) -> dict[str, Any]:
         survey_or_404(survey_id)
-        points = [p for e in state.events if e["type"] == "track" for p in e["points"]]
-        return {
-            "type": "FeatureCollection",
-            "features": [
-                {
-                    "type": "Feature",
-                    "properties": {"feature_kind": "track"},
-                    "geometry": {
-                        "type": "LineString",
-                        "coordinates": [[lon, lat] for lat, lon in points],
-                    },
-                }
-            ],
-        }
+        return track_feature_collection(state.track, state.quality)
 
     @r.get("/surveys/{survey_id}/detections")
     def detections(
@@ -238,13 +231,12 @@ def create_mock_app(event_delay_s: float = 0.05) -> FastAPI:
         review_status: str | None = None,
         flags: str | None = None,
         bbox: str | None = None,
+        include_rejected: bool = True,
         sort: str | None = None,
-        limit: int = Query(100, ge=1, le=1000),
+        limit: int = Query(100, ge=1, le=MAX_LIMIT),
         offset: int = Query(0, ge=0),
     ) -> dict[str, Any]:
-        survey_or_404(survey_id)
-        items = filter_detections(
-            list(state.detections.values()),
+        query = parse_query(
             cls=cls,
             min_conf=min_conf,
             max_conf=max_conf,
@@ -252,24 +244,56 @@ def create_mock_app(event_delay_s: float = 0.05) -> FastAPI:
             review_status=review_status,
             flags=flags,
             bbox=bbox,
+            include_rejected=include_rejected,
             sort=sort,
         )
+        survey_or_404(survey_id)
+        items = query_detections(state.detections.values(), query)
         return {"total": len(items), "items": items[offset : offset + limit]}
 
     @r.get("/surveys/{survey_id}/report")
-    def report(survey_id: str, format: str = "json") -> Response:  # noqa: A002
+    def report(
+        survey_id: str,
+        format: str = "json",  # noqa: A002 - API parameter name
+        scope: str = "all",
+        include_rejected: bool = False,
+        cls: str | None = Query(None, alias="class"),
+        min_conf: float | None = None,
+        max_conf: float | None = None,
+        tier: str | None = None,
+        review_status: str | None = None,
+        flags: str | None = None,
+        bbox: str | None = None,
+    ) -> Response:
         survey_or_404(survey_id)
-        current = copy.deepcopy(state.report) | {"detections": list(state.detections.values())}
-        filename = f"{survey_id}_report.{format}"
-        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
-        if format == "json":
-            return Response(
-                json.dumps(current, indent=2), media_type="application/json", headers=headers
+        fmt = format.lower()
+        if fmt not in SUPPORTED_FORMATS:
+            raise ValidationError(
+                f"Unsupported report format: {format}",
+                field="format",
+                supported=list(SUPPORTED_FORMATS),
             )
-        if format == "csv":
-            return Response(to_csv(current), media_type="text/csv", headers=headers)
-        raise ValidationError(
-            f"Report format {format} is not available in the mock", supported=["json", "csv"]
+        query = parse_query(
+            cls=cls,
+            min_conf=min_conf,
+            max_conf=max_conf,
+            tier=tier,
+            review_status=review_status,
+            flags=flags,
+            bbox=bbox,
+            include_rejected=include_rejected,
+        )
+        stored = list(state.detections.values())
+        selected = select_scope(stored, scope, query, include_rejected=include_rejected)
+        current = copy.deepcopy(state.report) | {
+            "summary": summarize(selected),
+            "detections": selected,
+        }
+        content = serialize(current, fmt, track=track_coords(state.track))
+        return Response(
+            content,
+            media_type=MEDIA_TYPES[fmt],
+            headers={"Content-Disposition": f'attachment; filename="{survey_id}_report.{fmt}"'},
         )
 
     @r.get("/jobs/{job_id}")
@@ -283,6 +307,7 @@ def create_mock_app(event_delay_s: float = 0.05) -> FastAPI:
         )
         return {
             "job_id": job_id,
+            "survey_id": state.survey_id,
             "status": state.job_status,
             "stage": "report",
             "percent": 100.0,
@@ -290,7 +315,9 @@ def create_mock_app(event_delay_s: float = 0.05) -> FastAPI:
             "pings_done": total,
             "pings_total": total,
             "stage_timings_ms": {},
-            "warnings": [e for e in state.events if e["type"] == "warning"],
+            "warnings": [
+                {k: e.get(k) for k in ("code", "ping_start", "ping_end")} for e in state.quality
+            ],
         }
 
     @r.post("/jobs/{job_id}/cancel")
@@ -301,37 +328,29 @@ def create_mock_app(event_delay_s: float = 0.05) -> FastAPI:
 
     @r.get("/detections/{detection_id}")
     def detection(detection_id: str) -> dict[str, Any]:
-        if detection_id not in state.detections:
-            raise NotFoundError(f"Detection {detection_id} not found", detection_id=detection_id)
-        return state.detections[detection_id]
+        return detection_or_404(detection_id)
+
+    @r.get("/detections/{detection_id}/chip.png")
+    def chip(detection_id: str, overlay: str = "mask") -> Response:
+        if overlay not in OVERLAYS:
+            raise ValidationError(
+                f"Unknown overlay: {overlay}", field="overlay", supported=list(OVERLAYS)
+            )
+        detection_or_404(detection_id)
+        grey = 96 + 24 * OVERLAYS.index(overlay)
+        return Response(placeholder_png(grey=grey), media_type="image/png")
 
     @r.patch("/detections/{detection_id}")
     async def review(detection_id: str, request: Request) -> dict[str, Any]:
-        if detection_id not in state.detections:
-            raise NotFoundError(f"Detection {detection_id} not found", detection_id=detection_id)
-        body = await request.json()
-        status = body.get("review_status")
-        if status not in {"pending", "confirmed", "rejected", "reclassified"}:
-            raise ValidationError(
-                "review_status must be pending, confirmed, rejected or reclassified"
-            )
-        if status == "rejected" and body.get("reject_reason") not in REJECT_REASONS:
-            raise ValidationError(
-                "reject_reason is required for a rejection", allowed=sorted(REJECT_REASONS)
-            )
-        det = state.detections[detection_id]
-        if status == "reclassified":
-            if "class" not in body:
-                raise ValidationError("class is required when reclassifying")
-            det["class"] = body["class"]
-        det["review"] = {
-            "status": status,
-            "reviewer": body.get("reviewer"),
-            "reject_reason": body.get("reject_reason") if status == "rejected" else None,
-            "note": body.get("note"),
-            "updated_utc": "2026-09-13T12:00:00Z",
-        }
-        return det
+        det = detection_or_404(detection_id)
+        try:
+            body = await request.json()
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise ValidationError("Send the review as a JSON object", field="body") from exc
+        decision = parse_review(body, det["class"])
+        updated = apply_review(det, decision, now_utc())
+        state.detections[detection_id] = updated
+        return updated
 
     app.include_router(r)
 
@@ -343,40 +362,30 @@ def create_mock_app(event_delay_s: float = 0.05) -> FastAPI:
                 {
                     "type": "error",
                     "job_id": job_id,
-                    "seq": 1,
+                    "ts": now_utc(),
                     "code": "NOT_FOUND",
-                    "message": "Job not found",
+                    "message": f"Job {job_id} not found",
                 }
             )
-            await websocket.close()
+            await websocket.close(code=CLOSE_NOT_FOUND)
             return
-        after = 0
         try:
-            first = await asyncio.wait_for(websocket.receive_json(), timeout=0.2)
-            if first.get("type") == "resume":
-                after = int(first.get("after_seq", 0))
-        except TimeoutError:
-            pass
+            opening = await first_message(websocket)
+            if opening is not None and opening.get("type") == "ping":
+                await websocket.send_json(pong(job_id))
+            after = resume_after(opening)
+            for event in state.stream():
+                if event["seq"] <= after:
+                    continue
+                await websocket.send_json(event)
+                if event["type"] in TERMINAL_EVENTS:
+                    break
+                await asyncio.sleep(event_delay_s)
+            await websocket.close(code=CLOSE_NORMAL)
         except WebSocketDisconnect:
             return
-        for event in state.events:
-            if event["seq"] <= after:
-                continue
-            await websocket.send_json(event | {"job_id": job_id})
-            await asyncio.sleep(event_delay_s)
-        await websocket.close()
 
     return app
 
 
 app = create_mock_app()
-
-
-def events_to_csv_rows(events: list[dict[str, Any]]) -> str:
-    """Debug helper: one CSV row per event (type, seq)."""
-    buffer = io.StringIO()
-    writer = csv.writer(buffer, lineterminator="\n")
-    writer.writerow(["seq", "type"])
-    for e in events:
-        writer.writerow([e["seq"], e["type"]])
-    return buffer.getvalue()

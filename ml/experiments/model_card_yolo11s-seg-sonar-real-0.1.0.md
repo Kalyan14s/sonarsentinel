@@ -74,7 +74,15 @@
 | shipwreck, pipe, ghost_net, debris_other | — | — | — | 0 (no training data) |
 
 ### 5.3–5.5
-Not measured for this draft: size/seabed slices, robustness perturbations and deployment variants (ONNX in ST-100, TensorRT in ST-101). SAHI vs. full image on validation (`sahi_val.json`): recall 0.43 → 0.50 for all 28 objects and 0.33 → 0.39 for the 18 small ones (< 32 px), at 1.65 instead of 0.26 s per image on CPU. The small-object gain is a single extra hit, so it is within noise.
+Not measured for this draft: size/seabed slices and robustness perturbations. Deployment variants ([EXP-20260914-onnx](EXP-20260914-onnx.md)):
+
+| Variant | Runtime / device | Size | Latency per 640 tile | Parity vs. PyTorch |
+|---|---|---|---|---|
+| FP32 | PyTorch 2.14 CPU, i5-13420H (idle) | 19.6 MiB | 169.9 ms | — |
+| ONNX FP32 | ONNX Runtime 1.30 CPU, i5-13420H (idle) | 38.7 MiB | 149.6 ms | 38/38 detections matched (IoU ≥ 0.95, Δscore ≤ 0.02) — TC-EDGE-001 pass |
+| TensorRT FP16/INT8 | Jetson | — | — | not measured (ST-101) |
+
+Full `sonarsentinel detect` on a 0.444 km USGS Klein 3900 line with the ONNX runtime: 97.5 s (≈ 220 s per km, NFR-02 target ≤ 300 s). SAHI vs. full image on validation (`sahi_val.json`): recall 0.43 → 0.50 for all 28 objects and 0.33 → 0.39 for the 18 small ones (< 32 px), at 1.65 instead of 0.26 s per image on CPU. The small-object gain is a single extra hit, so it is within noise.
 
 ## 7. Limitations and failure modes
 - Far below the PRD target: a 20-epoch CPU run on 118 objects. Treat every detection as a lead for review, not a finding.

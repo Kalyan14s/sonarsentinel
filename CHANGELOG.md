@@ -9,6 +9,22 @@ Categories: **Added** · **Changed** · **Deprecated** · **Removed** · **Fixed
 
 *(Phase 2 merged to `main` in `8d13648`, Phase 3 in `4237954`. Sprint 3 / Phase 4 on `main`.)*
 
+### Added (Sprint 5)
+- WebSocket `/ws/jobs/{job_id}` (ST-083): resume after `seq`, ping/pong, replay from memory or `job.log.jsonl`, live tail without duplicates, close 1000 after `done`/`error` and 4404 for unknown jobs; `done` now comes from the job manager after results are stored, with `report_urls` and `mosaic`
+- Results API (ST-084): `GET /surveys`, `/surveys/{id}`, `/surveys/{id}/detections` (class, confidence range, tier, review status, flags, bbox, sort, paging), `/surveys/{id}/track` (track + quality segments), `/surveys/{id}/report` (JSON/CSV/GeoJSON/KML with `all|filtered|hazards|confirmed` scopes), `/surveys/{id}/mosaic.png`, `/detections/{id}`, `/detections/{id}/chip.png`; one shared filter module for the API, mock and exports
+- Review `PATCH /detections/{id}` (ST-086): confirm, reject with reason, reclassify, undo; REVIEW rows and label store `labels/<yyyy-mm>/<detection_id>/label.json` + chip
+- GeoJSON (RFC 7946) and KML exports with class folders, styles, footprints and track (ST-072)
+- Dashboard (ST-092…095): live map with clustered markers, growing track, quality segments, footprints and mosaic overlay; reconnecting job subscription; client-side filters synced to the URL; windowed detection list with keyboard navigation; detection drawer with chip overlays, DD/DMS (same formatting as the backend), score breakdown, flags and review; reports & export screen; 50 Vitest tests
+- Position uncertainty budget per detection (ST-035, `geo.uncertainty` defaults), surface-return band flag with optional suppression (ST-047), GCP thin-plate-spline mosaic GeoTIFF/PNG/bounds per survey (ST-036)
+- ONNX export and runtime (ST-100): `ml/export_onnx.py` with TC-EDGE-001 parity check; `detection.runtime: auto` uses `best.onnx` when ONNX Runtime is installed
+- Demo asset A3 (`demo/harbour_synthetic.*`, `scripts/make_demo_assets.py`), clearly labelled synthetic
+- Sprint 5 plan; ADR-018
+
+### Changed (Sprint 5)
+- Cancelled jobs keep the detections found so far; failed jobs send `error` to WebSocket listeners
+- API validation errors (including FastAPI's) use the `VALIDATION_ERROR` shape; the real API allows the dashboard dev origin
+- `requirements-ml.txt` adds `onnx` and `onnxslim`
+
 ### Added (Sprint 4)
 - Scoring (ST-060…065, ADR-017): shadow consistency score and height from shadow length; 36 model, shadow, geometry, edge, texture, context and quality features per detection (< 5 ms); fusion of detector, anomaly, shadow, FP-filter and persistence scores with renormalised weights; isotonic calibrator (JSON breakpoints, pool-adjacent-violators) and LightGBM FP filter loaded at run time when present; `anomaly` tier requires anomaly score ≥ τ
 - Layback correction (ST-034): XTF layback field, manual value or cable-out estimate (`LAYBACK_ESTIMATED`); new `navigation.manual_layback_m`, `tow_point_height_m`, `antenna_to_tow_point_m`

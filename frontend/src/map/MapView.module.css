@@ -51,3 +51,42 @@
   background: var(--tier-hidden);
   border-color: var(--tier-hidden);
 }
+
+/* new markers drop in with a short highlight (disabled by prefers-reduced-motion in global.css) */
+:global(.ss-marker-wrap .ss-marker) {
+  animation: ss-drop 240ms ease-out;
+}
+
+:global(.ss-selected .ss-marker) {
+  box-shadow: 0 0 0 3px var(--color-focus);
+}
+
+@keyframes ss-drop {
+  from {
+    opacity: 0;
+    translate: 0 -8px;
+  }
+}
+
+:global(.ss-track) {
+  stroke: var(--color-track);
+}
+
+:global(.ss-track-label) {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-track);
+  color: var(--color-surface);
+  font: 700 11px/1 var(--font-sans);
+}
+
+:global(.ss-footprint) {
+  stroke: var(--color-accent);
+  fill: var(--color-accent);
+}
+
+:global(.ss-uncertainty) {
+  stroke: var(--color-accent);
+  fill: var(--color-accent);
+}

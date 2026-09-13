@@ -155,6 +155,6 @@ def test_image_only_report_is_not_geotagged(tmp_path: Path) -> None:
 
 def test_cli_reports_unknown_format(survey: SyntheticSurvey, tmp_path: Path) -> None:
     result = runner.invoke(
-        app, ["detect", survey.path, "--out", str(tmp_path), "--formats", "kml", "--quiet", *RULES]
+        app, ["detect", survey.path, "--out", str(tmp_path), "--formats", "pdf", "--quiet", *RULES]
     )
     assert result.exit_code == 1 and "VALIDATION_ERROR" in result.output

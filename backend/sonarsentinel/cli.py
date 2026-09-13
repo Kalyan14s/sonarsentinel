@@ -173,9 +173,14 @@ def build_detector(name: str, model: Path | None, cfg: dict[str, Any]) -> Any:
     weights = model or _repo_path(cfg["detection"]["model"])
     has_yolo = weights.is_file() and importlib.util.find_spec("ultralytics") is not None
     if name == "yolo" or (name == "auto" and has_yolo):
-        from sonarsentinel.detect.yolo import YoloDetector
+        from sonarsentinel.detect.yolo import YoloDetector, resolve_runtime_weights
 
-        return YoloDetector(weights, sahi=bool(cfg["detection"].get("sahi", True)))
+        chosen = resolve_runtime_weights(
+            weights,
+            str(cfg["detection"].get("runtime", "auto")),
+            onnxruntime_available=importlib.util.find_spec("onnxruntime") is not None,
+        )
+        return YoloDetector(chosen, sahi=bool(cfg["detection"].get("sahi", True)))
     from sonarsentinel.detect.classical import BrightTargetDetector
 
     return BrightTargetDetector()

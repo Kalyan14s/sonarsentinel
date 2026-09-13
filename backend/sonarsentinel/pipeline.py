@@ -18,6 +18,7 @@ otherwise). Same input and configuration give the same report apart from ``gener
 
 from __future__ import annotations
 
+import logging
 import math
 import time
 from collections.abc import Callable, Sequence
@@ -44,13 +45,21 @@ from sonarsentinel.geo.cluster import cluster_detections, persistence_score
 from sonarsentinel.geo.georef import raster_pixels_to_latlon
 from sonarsentinel.geo.layback import LAYBACK_ESTIMATED, resolve_layback
 from sonarsentinel.geo.measure import ImageGeometry, measure_mask, order_clockwise
+from sonarsentinel.geo.mosaic import MosaicBuilder
 from sonarsentinel.geo.track import track_bbox, track_length_km, valid_fixes
+from sonarsentinel.geo.uncertainty import position_uncertainty_m, speed_mps_from_nav
 from sonarsentinel.ingest.chunking import chunk_ranges
 from sonarsentinel.ingest.models import NOT_GEOTAGGED, SHIP_POSITION_ONLY, SonarLog
 from sonarsentinel.ingest.reader import read_source
 from sonarsentinel.preprocess.bottom import NO_ALTITUDE_BOTTOM_TRACKED
 from sonarsentinel.preprocess.channels import to_three_channel
 from sonarsentinel.preprocess.pipeline import preprocess_log
+from sonarsentinel.preprocess.surface import (
+    SURFACE_RETURN_BAND,
+    in_surface_band,
+    suppress_surface_detection,
+    surface_band_mask,
+)
 from sonarsentinel.preprocess.tiling import Tile, iter_tiles, row_col_mask
 from sonarsentinel.report.builder import alert_tier, build_report, iso_utc
 from sonarsentinel.report.chips import chip_url, remove_chips, rename_chips, write_chips
@@ -68,6 +77,7 @@ from sonarsentinel.scoring.shadow import ShadowResult, shadow_score
 EventCallback = Callable[[dict[str, Any]], None]
 CALIBRATOR_VERSION = IDENTITY_CALIBRATOR
 BATCH_TILES = 8
+logger = logging.getLogger(__name__)
 
 
 class PipelineCancelled(Exception):  # noqa: N818 - name is part of the jobs contract
@@ -191,7 +201,7 @@ def run_pipeline(
         allow_no_gps=allow_no_gps,
         work_dir=work_dir,
     )
-    layback_estimated = _apply_layback(log, cfg, apply_layback, manual_layback_m)
+    layback_estimated, layback_m = _apply_layback(log, cfg, apply_layback, manual_layback_m)
     emit("progress", stage="parse", percent=5.0, pings_done=0, pings_total=log.n_pings)
     sid = survey_id or _survey_id(log)
     chips_dir = Path(results_dir) / sid / "chips" if results_dir is not None else None
@@ -200,7 +210,15 @@ def run_pipeline(
         found, quality = _detect_geotiff(log, cfg, model, chips_dir)
     else:
         found, quality = _detect_waterfall(
-            log, cfg, model, emit, anomaly_model, chips_dir, layback_estimated
+            log,
+            cfg,
+            model,
+            emit,
+            anomaly_model,
+            chips_dir,
+            layback_estimated,
+            layback_m,
+            Path(results_dir) / sid if results_dir is not None else None,
         )
 
     emit("progress", stage="merge", percent=90.0)
@@ -406,10 +424,13 @@ def _survey_id(log: SonarLog) -> str:
 
 def _apply_layback(
     log: SonarLog, cfg: dict[str, Any], mode: str | bool | None, manual_m: float | None
-) -> bool:
-    """Move ship positions to the towfish (ST-034); True when the layback was estimated."""
+) -> tuple[bool, float | None]:
+    """Move ship positions to the towfish (ST-034).
+
+    Returns whether the layback was estimated and the median applied layback in metres.
+    """
     if log.source_format == "geotiff" or not log.has_navigation or not len(log.nav):
-        return False
+        return False, None
     nav_cfg = cfg.get("navigation", {})
     manual = manual_m if manual_m is not None else nav_cfg.get("manual_layback_m")
     result = resolve_layback(
@@ -421,12 +442,14 @@ def _apply_layback(
         antenna_to_tow_point_m=float(nav_cfg.get("antenna_to_tow_point_m", 0.0)),
     )
     if not result.applied:
-        return False
+        return False, None
     nav = log.nav.copy()
     nav["lat"] = result.lat
     nav["lon"] = result.lon
     log.nav = nav
-    return result.estimated
+    distance = result.layback_m
+    finite = distance[np.isfinite(distance)] if distance is not None else np.array([])
+    return result.estimated, float(np.median(finite)) if finite.size else None
 
 
 def _anomaly_heat(
@@ -478,11 +501,22 @@ def _detect_waterfall(
     anomaly_model: Any | None = None,
     chips_dir: Path | None = None,
     layback_estimated: bool = False,
+    layback_m: float | None = None,
+    mosaic_dir: Path | None = None,
 ) -> tuple[list[SurveyDetection], dict[str, Any]]:
     tiling = cfg["tiling"]
     min_raw = float(cfg["detection"]["min_raw_score"])
     chip_px = int(cfg.get("report", {}).get("chip_size_px", 256))
     pixel_threshold = float(getattr(anomaly_model, "pixel_threshold", 0.0) or 0.0)
+    speed_mps = speed_mps_from_nav(log.nav) if log.has_navigation else float("nan")
+    surface_tolerance = float(cfg["preprocess"].get("surface_return_tolerance_m", 0.5))
+    suppress_surface = bool(cfg["preprocess"].get("surface_return_mask", False))
+    report_cfg = cfg.get("report", {})
+    mosaic = (
+        MosaicBuilder(float(report_cfg.get("mosaic_ground_res_m", 0.25)))
+        if mosaic_dir is not None and report_cfg.get("mosaic", False) and log.has_navigation
+        else None
+    )
     warnings: set[str] = set(log.warnings)
     dropout = np.zeros(log.n_pings, dtype=bool)
     motion = np.zeros(log.n_pings, dtype=bool)
@@ -545,6 +579,15 @@ def _detect_waterfall(
         nav_source = chunk.nav["nav_source"].to_numpy(dtype=object)
         headings = chunk.nav["heading_deg"].to_numpy(np.float64)
         texture = chunk.image_3ch[..., 2]
+        local_rows = chunk.row_to_ping - chunk.ping_offset
+        band = surface_band_mask(
+            chunk.nav["sensor_depth_m"].to_numpy(np.float64)[local_rows],
+            chunk.altitude_m[local_rows],
+            chunk.nadir_col,
+            width,
+            chunk.ground_res_m,
+            tolerance_m=surface_tolerance,
+        )
         # The despeckle/texture/median filters mirror the image at its borders, so the first and
         # last rows of the *line* are noisier than the rest; chunk borders inside the line are
         # covered by the overlap and are not affected.
@@ -611,6 +654,26 @@ def _detect_waterfall(
                 near_nadir="NEAR_NADIR" in flags,
                 ground_range_m=m.ground_range_m,
             )
+            if in_surface_band(det.box, band):
+                flags.append(SURFACE_RETURN_BAND)
+                rel = features["orientation_rel_track_deg"]
+                if suppress_surface and suppress_surface_detection(
+                    True, m.length_m, m.width_m, rel if math.isfinite(rel) else None
+                ):
+                    continue  # surface-return streak (ADR-018 §7)
+            uncertainty_m = (
+                position_uncertainty_m(
+                    ground_range_m=m.ground_range_m,
+                    altitude_m=altitude_m,
+                    ground_res_m=chunk.ground_res_m,
+                    speed_mps=speed_mps,
+                    layback_m=layback_m,
+                    layback_estimated=layback_estimated,
+                    config=cfg,
+                )
+                if chunk.geotagged
+                else None
+            )
             chip_key = None
             if chips_dir is not None:
                 chip_key = f"_tmp_{chunk.chunk_id}_{len(found)}"
@@ -644,10 +707,16 @@ def _detect_waterfall(
                         "shadow": shadow,
                         "features": features,
                         "chip_key": chip_key,
+                        "uncertainty_m": uncertainty_m,
                     },
                 )
             )
 
+        if mosaic is not None and chunk.geotagged:
+            try:
+                mosaic.add(chunk.image, chunk.geo_frame())
+            except Exception as exc:  # a mosaic problem must not fail the survey
+                logger.warning("Mosaic: chunk %s skipped: %s", chunk.chunk_id, exc)
         if chunk.geotagged:
             step = max(1, n_local // 100)
             lat = chunk.nav["lat"].to_numpy(np.float64)[::step]
@@ -668,6 +737,12 @@ def _detect_waterfall(
             pings_done=done,
             pings_total=log.n_pings,
         )
+
+    if mosaic is not None and mosaic_dir is not None:
+        try:
+            mosaic.finish(mosaic_dir)
+        except Exception as exc:  # a mosaic problem must not fail the survey
+            logger.warning("Mosaic not written: %s", exc)
 
     quality = {
         "dropout_pings": int(dropout.sum()),
@@ -825,7 +900,7 @@ def _finalise(
                 "lat": m.lat if geotagged else None,
                 "lon": m.lon if geotagged else None,
                 "depth_m": m.depth_m,
-                "uncertainty_m": None,
+                "uncertainty_m": sd.extra.get("uncertainty_m") if geotagged else None,
             },
             "footprint": m.footprint if geotagged else None,
             "dimensions": {

@@ -45,8 +45,32 @@ def polygon_mask(
     return mask.astype(bool)
 
 
+RUNTIMES = ("auto", "torch", "onnxruntime")
+
+
+def resolve_runtime_weights(weights: Path, runtime: str, *, onnxruntime_available: bool) -> Path:
+    """Weights file for ``detection.runtime`` (ADR-018 §10).
+
+    ``auto`` uses ``<weights>.onnx`` next to the configured file when it exists and ONNX Runtime is
+    installed, otherwise the configured file; ``torch`` uses the ``.pt`` file; ``onnxruntime``
+    requires the ``.onnx`` file.
+    """
+    if runtime not in RUNTIMES:
+        from sonarsentinel.errors import ValidationError
+
+        raise ValidationError(f"Unknown detection runtime: {runtime}", supported=list(RUNTIMES))
+    onnx = weights.with_suffix(".onnx")
+    if runtime == "torch":
+        return weights.with_suffix(".pt") if weights.suffix == ".onnx" else weights
+    if runtime == "onnxruntime":
+        if not onnxruntime_available:
+            raise ModelsNotLoadedError("ONNX Runtime is not installed", runtime=runtime)
+        return onnx
+    return onnx if onnxruntime_available and onnx.is_file() else weights
+
+
 class YoloDetector:
-    """Ultralytics YOLO11-seg weights (``.pt``) or a model YAML (random init, for tests)."""
+    """Ultralytics YOLO11-seg weights (``.pt`` or exported ``.onnx``) or a model YAML (tests)."""
 
     runtime = "torch-cpu"
 
@@ -68,7 +92,12 @@ class YoloDetector:
         from ultralytics import YOLO  # type: ignore[attr-defined, unused-ignore]  # absent in CI
 
         self.weights = path
-        self.model: Any = YOLO(str(path))
+        if path.suffix == ".onnx":
+            # Exported models don't carry the task; ONNX Runtime executes them (ADR-012, ADR-018).
+            self.model: Any = YOLO(str(path), task="segment")
+            self.runtime = "onnxruntime-cpu"
+        else:
+            self.model = YOLO(str(path))
         self.imgsz, self.conf, self.device = imgsz, conf, device
         self.sahi, self.slice_px, self.slice_overlap = sahi, slice_px, slice_overlap
         self.class_names = tuple(class_names)

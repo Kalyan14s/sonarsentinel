@@ -159,7 +159,8 @@ def test_cancel_running_job_over_http(client: TestClient, xtf_bytes: bytes, tmp_
     assert job["status"] == "cancelled"
     events = _log(tmp_path / "data", job["survey_id"])
     chunks = [e for e in events if e["type"] == "progress" and e.get("stage") == "detect"]
-    assert len(chunks) == 1 and not any(e["type"] == "done" for e in events)
+    assert len(chunks) == 1
+    assert events[-1]["type"] == "done" and events[-1]["status"] == "cancelled"
 
 
 def test_validate_reports_metadata_without_processing(

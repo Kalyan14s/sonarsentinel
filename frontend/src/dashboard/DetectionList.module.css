@@ -1,0 +1,130 @@
+.wrap {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: var(--space-2);
+  height: 100%;
+  min-height: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.heading {
+  font-size: var(--text-md);
+  margin: 0;
+}
+
+.sort {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+}
+
+.sort select {
+  font: inherit;
+}
+
+.list {
+  position: relative;
+  overflow-y: auto;
+  min-height: 240px;
+  max-height: 100%;
+}
+
+.list:focus-visible {
+  outline: 2px solid var(--color-focus);
+}
+
+.row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto auto;
+  column-gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid transparent;
+  border-bottom-color: var(--color-border);
+  cursor: pointer;
+  font-size: var(--text-sm);
+}
+
+.row:hover {
+  background: var(--color-surface-muted);
+}
+
+.selected {
+  border-color: var(--color-accent);
+  background: var(--color-surface-muted);
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.title {
+  font-weight: 600;
+}
+
+.id {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.conf {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.badge {
+  grid-column: 2;
+  justify-self: start;
+  padding: 0 var(--space-1);
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: 0.6875rem;
+  letter-spacing: 0.03em;
+}
+
+.tier_hazard {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #fff;
+}
+
+.tier_review {
+  color: var(--color-warning);
+}
+
+.tier_anomaly {
+  border-style: dashed;
+  color: var(--class-unknown-anomaly);
+}
+
+.tier_hidden {
+  color: var(--tier-hidden);
+}
+
+.meta {
+  grid-column: 2 / 4;
+  color: var(--color-text-muted);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.empty {
+  padding: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
