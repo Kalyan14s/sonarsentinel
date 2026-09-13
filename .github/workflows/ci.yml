@@ -172,8 +172,8 @@ jobs:
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: sonarsentinel/backend:ci
-          format: table
-          output: trivy-backend.txt
+          format: json
+          output: trivy-backend.json
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           exit-code: "0"
@@ -181,16 +181,25 @@ jobs:
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: sonarsentinel/frontend:ci
-          format: table
-          output: trivy-frontend.txt
+          format: json
+          output: trivy-frontend.json
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           exit-code: "0"
+      # Findings as job annotations: critical as errors, high as warnings (visible in the run summary).
+      - name: Annotate Trivy findings
+        if: always()
+        run: |
+          for f in trivy-backend.json trivy-frontend.json; do
+            [ -f "$f" ] || continue
+            jq -r --arg img "${f%.json}" '.Results[]? | .Target as $t | .Vulnerabilities[]? |
+              "::\(if .Severity == "CRITICAL" then "error" else "warning" end) title=\($img) \(.Severity)::\($t) \(.PkgName) \(.InstalledVersion) \(.VulnerabilityID) fixed in \(.FixedVersion // "-")"' "$f"
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: trivy-reports
-          path: trivy-*.txt
+          path: trivy-*.json
       - name: Trivy gate (backend, critical)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:

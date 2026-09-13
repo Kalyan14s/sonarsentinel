@@ -26,7 +26,9 @@ COPY backend/configs /app/backend/configs
 RUN pip install --no-deps -e /app/backend
 
 FROM python:3.11-slim AS runtime
+# Upgrade base packages so Debian security fixes newer than the base image are included (TC-SEC-004).
 RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y --no-install-recommends curl libgl1 libglib2.0-0 libgomp1 \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 1000 sonar
