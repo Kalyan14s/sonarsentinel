@@ -26,6 +26,14 @@ Categories: **Added** · **Changed** · **Deprecated** · **Removed** · **Fixed
 
 ### Fixed (Sprint 3)
 - Across-track gain: cap each column at its 99th percentile before the running mean, so bright objects no longer darken their own range bins
+- CI: strict mypy without the ML packages (torch treated as an optional untyped import)
+
+### Models (Sprint 3)
+- `detector/yolo11s-seg-sonar-real@0.1.0`: CPU baseline, 20 epochs on 118 real cylinders; validation mAP@50 box 0.283 (95% CI 0.17–0.46), mask 0.280 ([EXP-20260913-baseline](ml/experiments/EXP-20260913-baseline.md))
+- `anomaly/patchcore-seafloor@0.1.0`: ResNet-18 PatchCore, 3,000-patch memory bank; tile AUROC 0.957 on held-out site 2017 ([EXP-20260913-patchcore](ml/experiments/EXP-20260913-patchcore.md))
+
+### Data (Sprint 3)
+- Synthetic pipes and cylinders 1.0.0: 1,000 tiles each; YOLO folders `yolo/0.1.0-real` (real only) and `yolo/0.1.0-real_synth` (+ synthetic ghost nets, holdout 200 tiles)
 
 ### Added (Sprint 2)
 - Navigation cleaning (ST-032): speed-gated invalid-fix detection, UTM Savitzky–Golay smoothing, circular heading smoothing, COG fallback

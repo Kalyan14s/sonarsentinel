@@ -42,8 +42,8 @@
 ## 3. Exit criteria (M3 / G2)
 
 - [ ] YOLO11-seg and PatchCore trained; baseline metrics recorded (experiment logs + model card draft)
-- [ ] `sonarsentinel detect sample.xtf` gives schema-valid JSON/CSV; integration test green in CI
-- [ ] API skeleton and mock server running; dashboard shell builds against the mock
+- [x] `sonarsentinel detect sample.xtf` gives schema-valid JSON/CSV; integration test green in CI *(`69f90cb`, [CI run](https://github.com/Kalyan14s/sonarsentinel/actions/runs/34767167431); also run on a real USGS Klein 3900 line)*
+- [x] API skeleton and mock server running; dashboard shell builds against the mock *(`sonarsentinel serve [--mock]`; frontend lint, typecheck, tests and build pass)*
 
 ## 4. Risks this sprint
 

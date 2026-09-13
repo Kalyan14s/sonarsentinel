@@ -207,11 +207,11 @@ flowchart LR
 ### Machine learning
 - [x] **ST-017** Synthetic pipe and cylinder generators — P1 · R2 · 5 pts. *`ml/synth/object_generators.py`: 1,000 pipe tiles (3,626 polygons) and 1,000 cylinder tiles (1,015) in `data/synthetic/{pipe,cylinder}/1.0.0/train`, each with mask, YOLO-seg label and parameters; unit-tested. The people-based visual review is part of ST-018*
 - [ ] **ST-018** Synthetic realism review (100 tiles) — P1 · R2 · 2 pts. *Needs ≥ 70% plausible ratings from team members; tiles ready (ghost net, pipe, cylinder)*
-- [ ] **ST-050** Baseline YOLO11s-seg on real data — P0 · R1 · 5 pts
+- [x] **ST-050** Baseline YOLO11s-seg on real data — P0 · R1 · 5 pts. *`detector/yolo11s-seg-sonar-real@0.1.0`: 20-epoch CPU baseline (0.8 h) on 150 real images / 118 cylinders. Validation (site 2017, 28 cylinders): **mAP@50 box 0.283 (95% CI 0.17–0.46)**, mask 0.280, P 0.38 / R 0.43 at conf 0.25; far below the PRD target, as expected for this data and schedule. Logged in [EXP-20260913-baseline](ml/experiments/EXP-20260913-baseline.md) with a [model card draft](ml/experiments/model_card_yolo11s-seg-sonar-real-0.1.0.md); configured as the `auto` detector*
 - [ ] **ST-051** Synthetic data + sonar augmentations; ablation — P0 · R1 · 5 pts
 - [ ] **ST-052** SAHI sliced inference — P0 · R1 · 3 pts
 - [x] **ST-053** PatchCore + `unknown_anomaly` extraction — P0 · R1 · 5 pts. *Own PyTorch PatchCore (ADR-016) `anomaly/patchcore-seafloor@0.1.0`: **tile AUROC 0.957** on held-out site 2017, recall 0.74 at 1.2% false alarms, 3.7 min on CPU ([EXP-20260913-patchcore](ml/experiments/EXP-20260913-patchcore.md)). Heatmap regions outside detector boxes become `unknown_anomaly` with `scores.anomaly` and their own tier (`test_detect_anomaly.py`, `test_pipeline_anomaly.py`; TC-DET-005 on real anomalies needs labelled data)*
-- [ ] **ST-057** `ml/evaluate.py` (metrics, PR curves, confusion) — P0 · R1 · 3 pts
+- [x] **ST-057** `ml/evaluate.py` (metrics, PR curves, confusion) — P0 · R1 · 3 pts. *Per-class 101-point AP@50 (box and mask), precision/recall at a threshold, PR curve CSVs, confusion table with missed/background, bootstrap 95% CI; takes Ultralytics weights or a predictions JSONL. Run on registry model `yolo11s-seg-sonar-real@0.1.0` (val and ghost-net holdout); unit-tested in `ml/tests/test_evaluate.py`*
 
 ### Pipeline & geo
 - [x] **ST-033** Measurements: footprint, size, orientation, depth — P0 · R3 · 3 pts. *`geo/measure.py`: minimum-area rectangle, footprint corners in WGS84, orientation from heading, depth = sensor depth + altitude; rotated rectangles measured within 1 px (TC-GEO-006…008)*
@@ -225,7 +225,7 @@ flowchart LR
 - [x] **ST-090** App shell, routing, design tokens, API types — P0 · R5 · 3 pts. *`frontend/`: React + TS + Vite + Leaflet, routes for all wireframe screens, class/tier tokens, typed client and generated report types, Live Map against the mock; lint, typecheck, 6 tests and build pass*
 
 ### Quality
-- [ ] **ST-110** Integration test: sample XTF → schema-valid report in CI — P0 · R6 · 3 pts
+- [x] **ST-110** Integration test: sample XTF → schema-valid report in CI — P0 · R6 · 3 pts. *`test_pipeline_integration.py`: synthetic XTF → `sonarsentinel detect` → schema-valid JSON/CSV, 3 targets found once (one inside a chunk overlap), track events per chunk, determinism, `--min-conf`, image-only `NOT_GEOTAGGED`, unsupported format; green in CI on `main` (`69f90cb`, [run](https://github.com/Kalyan14s/sonarsentinel/actions/runs/34767167431), all 5 jobs). The first push (`d0f97c1`) failed strict mypy because CI has no torch/ultralytics; fixed in `69f90cb`*
 
 ### Other tasks
 - [ ] Experiment logs for the baseline and synthetic runs ([template](docs/ml/EXPERIMENT_LOG_TEMPLATE.md)) — R1
@@ -234,7 +234,7 @@ flowchart LR
 
 ### Exit criteria (M3 / G2)
 - [ ] YOLO11-seg and PatchCore trained; baseline metrics recorded
-- [ ] `sonarsentinel detect sample.xtf` gives a schema-valid JSON/CSV; integration test green in CI
+- [x] `sonarsentinel detect sample.xtf` gives a schema-valid JSON/CSV; integration test green in CI. *Green on `main` (`69f90cb`, [run](https://github.com/Kalyan14s/sonarsentinel/actions/runs/34767167431)); also ran on a real USGS Klein 3900 line (192 s, both models named in the report)*
 
 ---
 
