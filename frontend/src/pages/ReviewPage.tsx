@@ -188,18 +188,23 @@ export function ReviewPage() {
     }
   };
 
+  // One listener for the page's lifetime that always calls the latest handler. Re-subscribing in an
+  // effect after every render left a stale listener (no current item) attached until the effect ran,
+  // so keys pressed right after the queue loaded were ignored.
+  const onKeyRef = useRef<(event: KeyboardEvent) => void>(() => undefined);
+  onKeyRef.current = (event: KeyboardEvent) => {
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    if (isTextField(event.target) && event.key !== 'Escape') return;
+    const action = keyAction(event.key, mode, current?.class);
+    if (!action) return;
+    event.preventDefault();
+    run(action);
+  };
   useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.ctrlKey || event.metaKey || event.altKey) return;
-      if (isTextField(event.target) && event.key !== 'Escape') return;
-      const action = keyAction(event.key, mode, current?.class);
-      if (!action) return;
-      event.preventDefault();
-      run(action);
-    };
+    const onKey = (event: KeyboardEvent) => onKeyRef.current(event);
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  });
+  }, []);
 
   const toggleTier = (tier: ReviewTier) =>
     setTiers((prev) => (prev.includes(tier) ? prev.filter((t) => t !== tier) : [...prev, tier]));
